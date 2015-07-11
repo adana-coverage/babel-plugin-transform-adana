@@ -2,15 +2,19 @@
 	"name": "adana",
 	"version": "0.1.0",
 	"description": "A better instanbul.",
-	"main": "lib/index.js",
+	"main": "dist/instrumenter.js",
 	"scripts": {
-		"test": "./node_modules/.bin/_mocha -r 'babel-core/register' -R spec test/spec"
+		"prepublish": "./node_modules/.bin/babel --stage 0 -s inline -d dist lib/",
+		"pretest": "./node_modules/.bin/babel -d test/dist/spec test/spec",
+		"instrument": "./node_modules/.bin/babel -d test/dist/lib --plugins . lib/",
+		"spec": "./node_modules/.bin/_mocha -R spec test/spec",
+		"test": "npm run pretest && npm run instrument && npm run spec"
 	},
 	"dependencies": {
-		"babel-core": "^5.5.8",
 		"lodash": "^3.9.3"
 	},
 	"devDependencies": {
+		"babel": "^5.8.5",
 		"mocha": "^2.2.5",
 		"chai": "^3.0.0"
 	}

@@ -1,7 +1,4 @@
 
-
-import foo from 'path';
-
 var i, j;
 
 i = 5;
