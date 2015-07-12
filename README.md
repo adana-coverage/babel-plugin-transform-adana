@@ -41,22 +41,23 @@ const result = transform('some code', {
 To collect information about code that has been instrumented, simply access the configured global variable.
 
 ```javascript
-eval(result.code);
-console.log(__COV);
+import vm from 'vm';
+const sandbox = vm.createContext({});
+sandbox.global = sandbox;
+vm.runInContext(result.code, sandbox);
+console.log(sandbox.__coverage__);
 ```
-
-
 
 ### CLI
 
 ```sh
-adana-cover mocha test/spec
-adana-check --tags=ie,firefox
+babel --plugins "adana" -d output/ input/
+babel --plugins "adana" -o output.js input.js
 ```
 
 [babel]: http://babeljs.io
 [istanbul]: https://github.com/gotwarlost/istanbul
-[mocha]:
-[jasmine]:
+[mocha]: http://mochajs.org/
+[jasmine]: http://jasmine.github.io/
 [west]: https://www.github.com/izaakschroeder/west
 [lcov]: http://ltp.sourceforge.net/coverage/lcov/geninfo.1.php
