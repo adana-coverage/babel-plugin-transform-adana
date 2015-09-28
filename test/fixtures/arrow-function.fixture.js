@@ -1,4 +1,4 @@
 
-var x = y => y * 2;
+const x = y => y * 2;
 
 x(1);

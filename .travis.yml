@@ -1,0 +1,18 @@
+sudo: false
+language: node_js
+node_js:
+- 4.1.1
+- '0.12'
+before_install:
+- npm update -g npm
+after_success:
+- npm install coveralls
+- cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+deploy:
+  provider: npm
+  email: izaak.schroeder@gmail.com
+  skip_cleanup: true
+  on:
+    tags: true
+  api_key:
+    secure: Zj38Gd3jZ2tHQqMBUf32qnp3Pi8ohz3R9m7/J9/6FYkr8J/0EumpodBAvcj+57GQFhp5HyZGJrf9hLT5yITh82UGY9sdTWcR/WZMblq+tbBZDIJ/MUovPm8y6YSh04EpOJUcxT5RNEKSuI6L3z7RqgD7wE2yWxj6ZgghW3uNdRZPjvNQeB750A516c/c5ao9Ld97ZjklYREFU6mc0q4SmskvK4J7IEbqEvIe3g10f6aXK6OU5rg//HI4zfju3LVokm2d29mR0DuOW/T4PPgcadC/RwTmL063NXfFhfucuvctPixh4saN2f4Z/fMCjbOGtcWC/nQ4KU1XDBCvUfDDG7T32S69X+/mxyf2RWrUm+jZzARdfOz3M67vkTaEHM4+s+oL0wbVS2/B0KjexqmwJdqhezLFh0IIeFvtPDTp8qzX3BPM/Ycx0tdz//uJk299/OAypo1RAmkZncciPh11RbEyOYee5jmDC8KnNK7n/wUFa0oTqGc2JQsC8R4jVzD7AulvhXV/YqKItdtfYi6tFzz0gv1D2+WFkMXggvyKX1ur9mS5DuKbJ4PgFfB4apDldmBsU2K7/rTDpBWBJoAw4LS5HuzPinJf4j19hw3LBsI8oKbHszDt4YEHnRysJ9KdIVwIctYSmXE9aOons3RjtlCOESZR2VR7wKOVI7HP2yw=

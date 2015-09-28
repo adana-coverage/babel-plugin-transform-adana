@@ -2,86 +2,119 @@
 import { expect } from 'chai';
 import path from 'path';
 import vm from 'vm';
-import fs from 'fs';
 import { transformFile } from 'babel-core';
 
+import analyze from '../../src/analyze';
+
 describe('Instrumenter', () => {
+  const options = {
+    plugins: [ '../' ],
+    presets: [ ],
+    sourceMaps: true,
+    ast: false,
+  };
 
-	const options = {
-		plugins: [ '../test/dist/lib/instrumenter' ],
-		stage: 0,
-		sourceMaps: true,
-		ast: false
-	};
+  function transform(fixture) {
+    const file = path.join('.', 'test', 'fixtures', `${fixture}.fixture.js`);
+    return (new Promise((resolve, reject) => {
+      transformFile(
+        file,
+        options,
+        (err, data) => err ? reject(err) : resolve(data)
+      );
+    })).then(data => {
+      return { file, data };
+    });
+  }
 
-	function transform(fixture, callback) {
-		transformFile(
-			path.join('.', 'test', 'fixtures', fixture + '.fixture.js'),
-			options,
-			callback
-		);
-	}
+  function run(fixture) {
+    return transform(fixture).then(({ data, file }) => {
+      const sandbox = vm.createContext({});
+      sandbox.global = sandbox;
+      vm.runInContext(data.code, sandbox);
+      return {
+        ...analyze(sandbox.__coverage__[file]),
+        code: data.code,
+      };
+    });
+  }
 
-	function run(fixture, callback) {
-		transform(fixture, function(err, data) {
-			console.log('TRANFAARRMED', arguments)
-			if (err) {
-				callback(err)
-			} else {
-				const sandbox = vm.createContext({});
-				sandbox.global = sandbox;
-				vm.runInContext(data.code, sandbox);
-				callback(null, {
-					coverage: sandbox.__coverage__
-				});
-			}
-		})
-	}
+  describe('statements', () => {
+    it('should cover simple statements', () => {
+      return run('statements').then(({ statements }) => {
+        expect(statements).to.have.length(3);
+        expect(statements[0]).to.have.property('count', 1);
+        expect(statements[1]).to.have.property('count', 1);
+        expect(statements[2]).to.have.property('count', 1);
+      });
+    });
+  });
 
+  describe('do-while loops', () => {
+    it('should cover do-while loops', () => {
+      return run('do-while').then(({ branches, statements }) => {
+        expect(statements).to.have.length(5);
+        expect(statements[3]).to.have.property('count', 5);
+        expect(branches).to.have.length(2);
+        expect(branches[0]).to.have.property('count', 4);
+        expect(branches[1]).to.have.property('count', 1);
+      });
+    });
+  });
 
-	it('should do something', done => {
-		console.log('MAH N IGGGERRERS')
-		run('statements', (err, result) => {
-			if (err) {
-				done(err);
-			} else {
-				console.log(result);
-				done();
-			}
-		});
-	});
+  describe('exceptions', () => {
+    it('should cover exceptions', () => {
+      return run('exception').then(({ branches }) => {
+        expect(branches).to.have.length(2);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 1);
+      });
+    });
+  });
 
-	it.skip('should export coverage metadata', done => {
-		transform('statements', (err, result) => {
-			expect(err).to.be.null;
-			expect(result.metadata).to.have.property('coverage');
-			done();
-		});
-	});
+  describe('functions', () => {
+    it('should cover functions', () => {
+      return run('function').then(({ branches, functions }) => {
+        expect(branches).to.have.length(0);
+        expect(functions).to.have.length(2);
+        expect(functions[0]).to.have.property('count', 2);
+        expect(functions[1]).to.have.property('count', 0);
+      });
+    });
+  });
 
-	describe.skip('.stats', () => {
+  describe('if blocks', () => {
+    it('should cover if blocks', () => {
+      return run('if').then(({ branches }) => {
+        expect(branches).to.have.length(4);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 0);
+        expect(branches[2]).to.have.property('count', 1);
+        // TODO: Ensure all branches map to same group
+      });
+    });
+  });
 
-		var stats;
+  describe('switch blocks', () => {
+    it('should cover switch statements', () => {
+      return run('switch').then(({ branches }) => {
+        expect(branches).to.have.length(3);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 0);
+        expect(branches[2]).to.have.property('count', 1);
+        // TODO: Ensure all branches map to same group
+      });
+    });
+  });
 
-		beforeEach(done => {
-			transform('complex', (err, result) => {
-				expect(err).to.be.null;
-
-				done();
-			});
-		});
-
-		it('should correctly count number of functions', done => {
-
-		});
-
-		it('should correctly count number of statements', done => {
-
-		});
-
-		it('should correctly count number of branches', done => {
-
-		});
-	})
-
+  describe('while loops', () => {
+    it('should cover while loops', () => {
+      return run('while').then(({ branches }) => {
+        expect(branches).to.have.length(2);
+        expect(branches[0]).to.have.property('count', 4);
+        expect(branches[1]).to.have.property('count', 1);
+        // TODO: Ensure all branches map to same group
+      });
+    });
+  });
 });
