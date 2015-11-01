@@ -127,6 +127,15 @@ describe('Instrumenter', () => {
         // TODO: Ensure all branches map to same group
       });
     });
+    it('should cover switch statements without `default` rules', () => {
+      return run('switch-no-default').then(({ branches }) => {
+        expect(branches).to.have.length(3);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 0);
+        expect(branches[2]).to.have.property('count', 1);
+        // TODO: Ensure all branches map to same group
+      });
+    });
   });
 
   describe('while loops', () => {
