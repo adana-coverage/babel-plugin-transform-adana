@@ -137,7 +137,10 @@ export default function adana({ types }) {
     instrument(path.get('body'), state, {
       type: 'function',
       name: path.node.id ? path.node.id.name : `@${key(path.node)}`,
-      loc: path.node.id ? path.node.id.loc : path.node.loc,
+      loc: {
+        start: path.node.loc.start,
+        end: path.node.loc.start,
+      },
     });
   }
 
