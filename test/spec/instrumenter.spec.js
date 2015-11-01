@@ -30,11 +30,17 @@ describe('Instrumenter', () => {
   function run(fixture) {
     return transform(fixture).then(({ data, file }) => {
       const sandbox = vm.createContext({});
+      let error = null;
       sandbox.global = sandbox;
-      vm.runInContext(data.code, sandbox);
+      try {
+        vm.runInContext(data.code, sandbox);
+      } catch (err) {
+        error = err;
+      }
       return {
         ...analyze(sandbox.__coverage__[file]),
         code: data.code,
+        error,
       };
     });
   }
@@ -64,7 +70,15 @@ describe('Instrumenter', () => {
 
   describe('exceptions', () => {
     it('should cover exceptions', () => {
-      return run('exception').then(({ branches }) => {
+      return run('try-catch').then(({ branches }) => {
+        expect(branches).to.have.length(2);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 1);
+      });
+    });
+    it('should cover exceptions', () => {
+      return run('try-no-catch').then(({ branches, error }) => {
+        expect(error).to.not.be.null;
         expect(branches).to.have.length(2);
         expect(branches[0]).to.have.property('count', 0);
         expect(branches[1]).to.have.property('count', 1);
@@ -84,12 +98,20 @@ describe('Instrumenter', () => {
   });
 
   describe('if blocks', () => {
-    it('should cover if blocks', () => {
-      return run('if').then(({ branches }) => {
+    it('should cover if-else-if blocks', () => {
+      return run('if-else-if').then(({ branches }) => {
         expect(branches).to.have.length(4);
         expect(branches[0]).to.have.property('count', 0);
         expect(branches[1]).to.have.property('count', 0);
         expect(branches[2]).to.have.property('count', 1);
+        // TODO: Ensure all branches map to same group
+      });
+    });
+    it('should cover if-else blocks', () => {
+      return run('if-else').then(({ branches }) => {
+        expect(branches).to.have.length(2);
+        expect(branches[0]).to.have.property('count', 0);
+        expect(branches[1]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });

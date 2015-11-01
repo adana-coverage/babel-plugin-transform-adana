@@ -78,11 +78,12 @@ export default function adana({ types }) {
   }
 
   /**
-   * [instrument description]
-   * @param   {[type]} path    [description]
-   * @param   {[type]} state   [description]
-   * @param   {[type]} options [description]
-   * @returns {[type]}         [description]
+   * Inject a marker that measures whether the node for the given path has
+   * been run or not.
+   * @param {Object} path    [description]
+   * @param {Object} state   [description]
+   * @param {Object} options [description]
+   * @returns {void}
    */
   function instrument(path, state, options) {
     if (!path.node || !path.node.loc || path.node.__adana) {
@@ -136,10 +137,7 @@ export default function adana({ types }) {
     instrument(path.get('body'), state, {
       type: 'function',
       name: path.node.id ? path.node.id.name : `@${key(path.node)}`,
-      loc: {
-        start: path.node.loc.start,
-        end: path.node.body.loc,
-      },
+      loc: path.node.id ? path.node.id.loc : path.node.loc,
     });
   }
 
@@ -252,11 +250,12 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitTryStatement(path, state) {
+    const group = key(path.node);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
         type: 'branch',
         loc: path.get('block').node.loc,
-        group: key(path.node),
+        group: group,
       })
     ));
     if (path.has('handler')) {
@@ -266,13 +265,29 @@ export default function adana({ types }) {
           createMarker(state, {
             type: 'branch',
             loc: path.get('handler').node.loc,
-            group: key(path.node),
+            group: group,
           })
         )
       );
     } else {
-      // TODO: Give the catch an empty handler
-      path.get('handler').replaceWith();
+      const loc = path.get('block').node.loc.end;
+      path.get('handler').replaceWith(types.catchClause(
+        types.identifier('err'), types.blockStatement([
+          types.expressionStatement(
+            createMarker(state, {
+              type: 'branch',
+              loc: {
+                start: loc,
+                end: loc,
+              },
+              group: group,
+            })
+          ),
+          types.throwStatement(
+            types.identifier('err')
+          ),
+        ])
+      ));
     }
   }
 
@@ -352,6 +367,12 @@ export default function adana({ types }) {
     visitor: {
       Program: {
         enter(path, state) {
+          // Check if file should be instrumented or not,
+          // yes, continue; otherwise path.skip()
+          // Other TODO thought: collect hash of file, assign that to
+          // coverage; allow "merging" of same-hash coverage where the counters
+          // are incremented. This could be for someone who has to run a program
+          // several times for the same files to cover everything.
           meta(state, {
             entries: [],
             variable: path.scope.generateUidIdentifier('coverage'),
