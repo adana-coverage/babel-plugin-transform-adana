@@ -2,11 +2,14 @@
   "name": "babel-plugin-transform-adana",
   "version": "0.1.0",
   "description": "A better instanbul.",
+  "repository": "izaakschroeder/babel-plugin-transform-adana",
+  "license": "CC0-1.0",
   "main": "index.js",
   "keywords": [
     "coverage",
     "istanbul",
-    "babel-plugin"
+    "babel-plugin",
+    "babel"
   ],
   "scripts": {
     "lint": "./node_modules/.bin/eslint --ignore-path .gitignore .",

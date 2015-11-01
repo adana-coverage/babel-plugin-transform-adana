@@ -8,7 +8,7 @@ Minimal, complete code-coverage tool for [babel] 6+.
 ![version](http://img.shields.io/npm/v/babel-plugin-transform-adana.svg?style=flat)
 ![downloads](http://img.shields.io/npm/dm/babel-plugin-transform-adana.svg?style=flat)
 
-Has all the features of [istanbul] including line, function and branch coverage, but works as a babel plugin instead of relying on `esparse` and `escodegen`. Works great with [west], [mocha], [jasmine] and probably more.
+Has all the features of [istanbul] including line, function and branch coverage, but works as a [babel] plugin instead of relying on `esparse` and `escodegen`. Works great with [west], [mocha], [jasmine] and probably more.
 
 Features:
 
@@ -17,10 +17,10 @@ Features:
  * Smart branch detection.
 
 TODO:
-  * Tagged instrumentation,
-	* Convert branch/line/function to tag?
-  * More test cases,
-	* Split out bins/reporters into other modules.
+ * Tagged instrumentation,
+ * Convert branch/line/function to tag?
+ * More test cases,
+ * Split out bins/reporters into other modules.
 
 ## Usage
 
@@ -61,16 +61,7 @@ Run some checks:
 adana-check --statements 100 --branches 100 --functions 100
 ```
 
-```javascript
-/* global __coverage__ */
-import { writeFileSync } from 'fs';
 
-// Dump that data to disk after tests have finished.
-process.on('exit', () => {
-	writeFileSync('coverage/coverage.json', JSON.stringify(__coverage__));
-});
-
-```
 
 ### Tags
 
@@ -93,18 +84,15 @@ if () {
 }
 ```
 
-
-
-
 ### API
 
-`adana` is simply a [babel] transformer that injects markers to determine if specific parts of the code have been run. To inject these markers simply add [adana] as a plugin and use [babel] normally:
+`adana` is simply a [babel] transformer that injects markers to determine if specific parts of the code have been run. To inject these markers simply add `transform-adana` as a plugin and use [babel] normally:
 
 ```javascript
 import { transform } from 'babel-core';
 
 const result = transform('some code', {
-	plugins: [ 'adana' ]
+	plugins: [ 'transform-adana' ]
 });
 
 // Access result.code, result.map and result.metadata.coverage
@@ -138,6 +126,17 @@ The `__coverage__` object has the following shape:
 		...
 	}, ...]
 }
+```
+
+```javascript
+/* global __coverage__ */
+import { writeFileSync } from 'fs';
+
+// Dump that data to disk after tests have finished.
+process.on('exit', () => {
+	writeFileSync('coverage/coverage.json', JSON.stringify(__coverage__));
+});
+
 ```
 
 ### HMR Spec Coverage
