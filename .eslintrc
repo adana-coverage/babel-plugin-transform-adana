@@ -1,0 +1,11 @@
+{
+  "extends": [
+    "metalab/rules/babel",
+    "metalab/rules/style",
+    "metalab/rules/filenames",
+    "metalab/rules/docs",
+    "metalab/rules/import",
+    "metalab/rules/modern",
+    "metalab/rules/errors"
+  ]
+}
