@@ -18,7 +18,6 @@ Features:
 
 TODO:
  * Tagged instrumentation,
- * Convert branch/line/function to tag?
  * More test cases,
  * Split out bins/reporters into other modules.
 

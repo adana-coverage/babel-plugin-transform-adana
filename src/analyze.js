@@ -7,7 +7,7 @@ function merge({ locations, counters }) {
 }
 
 function type(name, base) {
-  const entries = base.filter(loc => loc.type === name);
+  const entries = base.filter(loc => !!~loc.tags.indexOf(name));
   const covered = entries.reduce((sum, { passed }) => {
     return passed ? sum + 1 : sum;
   }, 0);
