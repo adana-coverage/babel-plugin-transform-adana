@@ -7,6 +7,7 @@ case 1:
   break;
 case 2:
   foo = 1;
+  break;
 default:
   foo = 9;
 }
