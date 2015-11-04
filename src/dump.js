@@ -1,21 +1,20 @@
-/* global process __coverage__ */
+/* global  */
 
 import { writeFileSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import mkdirp from 'mkdirp';
 import lcov from './lcov';
 
-const file = 'coverage/lcov.info';
-const file2 = 'coverage/coverage.json';
+export default function dump({ coverage, path }) {
+  const file = join(path, 'lcov.info');
+  const file2 = join(path, 'coverage.json');
 
-// Dump that data to disk after tests have finished.
-process.on('exit', () => {
-  if (typeof __coverage__ !== 'undefined') {
+  if (typeof coverage !== 'undefined') {
     mkdirp.sync(dirname(file));
-    writeFileSync(file, lcov(__coverage__));
+    writeFileSync(file, lcov(coverage));
   }
-  if (typeof __coverage__ !== 'undefined') {
+  if (typeof coverage !== 'undefined') {
     mkdirp.sync(dirname(file2));
-    writeFileSync(file2, JSON.stringify(__coverage__, null, '  '));
+    writeFileSync(file2, JSON.stringify(coverage, null, '  '));
   }
-});
+}

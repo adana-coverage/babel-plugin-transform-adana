@@ -1,20 +1,24 @@
-
+import { createHash } from 'crypto';
 import prelude from './prelude';
 import meta from './meta';
+
+export function hash(code) {
+  return createHash('sha1').update(code).digest('hex');
+}
 
 /**
  * Create an opaque, unique key for a given node. Useful for tagging the node
  * in separate places.
- * @param {Object} node Babel node to derive key from.
+ * @param {Object} path Babel path to derive key from.
  * @returns {String} String key.
  */
-function key(node) {
+export function key(path) {
+  const node = path.node;
   if (node.loc) {
     const location = node.loc.start;
     return `${location.line}:${location.column}`;
   }
-  // TODO: Determine a branch name when location is lacking.
-  return 'lolol';
+  throw new TypeError('Path must have valid location.');
 }
 
 /**
@@ -27,6 +31,10 @@ function key(node) {
 function X(node) {
   node.__adana = true;
   return node;
+}
+
+function ignore(path) {
+  return (!path.node || !path.node.loc || path.node.__adana);
 }
 
 /**
@@ -46,6 +54,13 @@ export default function adana({ types }) {
     const { tags, loc, name, group } = options;
     const coverage = meta(state);
     const id = coverage.entries.length;
+
+    tags.forEach(tag => {
+      if (!coverage.tags[tag]) {
+        coverage.tags[tag] = [];
+      }
+      coverage.tags[tag].push(coverage.entries.length);
+    });
 
     coverage.entries.push({
       id,
@@ -72,7 +87,7 @@ export default function adana({ types }) {
     const parent = path.parentPath;
     return !parent.isReturnStatement() &&
       !parent.isVariableDeclaration() &&
-      !parent.isExportDefaultDeclaration() &&
+      !parent.isExportDeclaration() &&
       !parent.isFunctionDeclaration() &&
       !parent.isIfStatement();
   }
@@ -86,7 +101,7 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function instrument(path, state, options) {
-    if (!path.node || !path.node.loc || path.node.__adana) {
+    if (ignore(path)) {
       return;
     }
 
@@ -108,8 +123,6 @@ export default function adana({ types }) {
       if (isInstrumentableStatement(path)) {
         path.insertBefore(X(types.expressionStatement(marker())));
       }
-    } else {
-      throw new TypeError(path);
     }
   }
 
@@ -120,7 +133,13 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitStatement(path, state) {
-    instrument(path, state, { tags: [ 'statement' ] });
+    if (ignore(path)) {
+      return;
+    }
+    instrument(path, state, {
+      tags: [ 'statement', 'line' ],
+      loc: path.node.loc,
+    });
   }
 
   /**
@@ -131,16 +150,13 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitFunction(path, state) {
-    if (!path.node.loc) {
+    if (ignore(path)) {
       return;
     }
     instrument(path.get('body'), state, {
       tags: [ 'function' ],
-      name: path.node.id ? path.node.id.name : `@${key(path.node)}`,
-      loc: {
-        start: path.node.loc.start,
-        end: path.node.loc.start,
-      },
+      name: path.node.id ? path.node.id.name : `@${key(path)}`,
+      loc: path.node.loc,
     });
   }
 
@@ -153,6 +169,9 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitSwitchStatement(path, state) {
+    if (ignore(path)) {
+      return;
+    }
     let hasDefault = false;
     path.get('cases').forEach(entry => {
       if (entry.node.test === null) {
@@ -160,8 +179,8 @@ export default function adana({ types }) {
       }
       entry.unshiftContainer('consequent', createMarker(state, {
         tags: [ 'branch' ],
-        loc: path.node.loc,
-        group: key(path.node),
+        loc: entry.node.loc,
+        group: key(path),
       }));
     });
 
@@ -179,14 +198,14 @@ export default function adana({ types }) {
       }
       // Finally add the default case.
       path.pushContainer('cases', types.switchCase(null, [
-        createMarker(state, {
+        types.expressionStatement(createMarker(state, {
           tags: [ 'branch' ],
           loc: {
             start: path.node.loc.end,
             end: path.node.loc.end,
           },
-          group: key(path.node),
-        }),
+          group: key(path),
+        })),
         types.breakStatement(),
       ]));
     }
@@ -199,9 +218,14 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitVariableDeclaration(path, state) {
+    if (ignore(path)) {
+      return;
+    }
     path.get('declarations').forEach(decl => {
       if (decl.has('init')) {
-        instrument(decl.get('init'), state, { tags: [ 'statement' ] });
+        instrument(decl.get('init'), state, {
+          tags: [ 'statement', 'variable', 'line' ],
+        });
       }
     });
   }
@@ -214,7 +238,11 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitWhileLoop(path, state) {
+    if (ignore(path)) {
+      return;
+    }
     const test = path.get('test');
+    const group = key(path);
     // This is a particularly clever use of the fact JS operators are short-
     // circuiting. To instrument a loop one _cannot_ add a marker on the outside
     // of the loop body due to weird cases of things where loops are in non-
@@ -223,23 +251,23 @@ export default function adana({ types }) {
     // postfix, they're always true. Ergo, A is only incremented when condition
     // is true, B only when it's false and the truth value of the whole
     // statement is preserved. Neato.
-    test.replaceWith(types.binaryExpression(
+    test.replaceWith(types.logicalExpression(
       '||',
-      types.binaryExpression(
+      types.logicalExpression(
         '&&',
-        test.node,
+        X(test.node),
         createMarker(state, {
-          tags: [ 'branch' ],
+          tags: [ 'branch', 'line', 'statement' ],
           loc: test.node.loc,
-          group: key(test.node),
+          group,
         })
       ),
       types.unaryExpression(
         '!',
         createMarker(state, {
-          tags: [ 'branch' ],
+          tags: [ 'branch', 'line' ],
           loc: test.node.loc,
-          group: key(test.node),
+          group,
         })
       )
     ));
@@ -253,12 +281,15 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitTryStatement(path, state) {
-    const group = key(path.node);
+    if (ignore(path)) {
+      return;
+    }
+    const group = key(path);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
-        tags: [ 'branch' ],
+        tags: [ 'branch', 'line' ],
         loc: path.get('block').node.loc,
-        group: group,
+        group,
       })
     ));
     if (path.has('handler')) {
@@ -266,9 +297,9 @@ export default function adana({ types }) {
         'body',
         types.expressionStatement(
           createMarker(state, {
-            tags: [ 'branch' ],
+            tags: [ 'branch', 'line' ],
             loc: path.get('handler').node.loc,
-            group: group,
+            group,
           })
         )
       );
@@ -283,7 +314,7 @@ export default function adana({ types }) {
                 start: loc,
                 end: loc,
               },
-              group: group,
+              group,
             })
           ),
           types.throwStatement(
@@ -303,8 +334,25 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitLogicalExpression(path, state) {
-    instrument(path.get('left'), state, { tags: [ 'branch' ] });
-    instrument(path.get('right'), state, { tags: [ 'branch' ] });
+    if (ignore(path)) {
+      return;
+    }
+    const group = key(path);
+    const test = path.scope.generateDeclaredUidIdentifier('test');
+
+    path.replaceWith(X(types.conditionalExpression(
+      types.assignmentExpression('=', test, X(path.node)),
+      types.sequenceExpression([ createMarker(state, {
+        tags: [ 'branch' ],
+        loc: path.get('left').node.loc,
+        group,
+      }), test ]),
+      types.sequenceExpression([ createMarker(state, {
+        tags: [ 'branch' ],
+        loc: path.get('right').node.loc,
+        group,
+      }), test ])
+    )));
   }
 
   /**
@@ -317,7 +365,7 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitConditional(path, state) {
-    if (!path.node.loc) {
+    if (ignore(path)) {
       return;
     }
     // Branches can be grouped together so that each of the possible branch
@@ -330,26 +378,19 @@ export default function adana({ types }) {
     }) || path;
 
     // Create the group name based on the root `if` statement.
-    const group = key(root.node);
+    const group = key(root);
 
     instrument(path.get('consequent'), state, {
-      tags: [ 'branch' ],
-      loc: {
-        start: path.node.loc.start,
-        end: path.node.consequent.loc.start,
-      },
-      group: group,
+      tags: [ 'branch', 'line' ],
+      loc: path.node.consequent.loc,
+      group,
     });
 
     if (path.has('alternate') && !path.get('alternate').isIfStatement()) {
       instrument(path.get('alternate'), state, {
-        tags: [ 'branch' ],
-        loc: {
-          start: path.node.consequent.loc ?
-            path.node.consequent.loc.end : path.node.loc,
-          end: path.node.alternate.loc.start,
-        },
-        group: group,
+        tags: [ 'branch', 'line' ],
+        loc: path.node.alternate.loc,
+        group,
       });
     } else if (!path.has('alternate')) {
       path.get('alternate').replaceWith(types.expressionStatement(
@@ -359,7 +400,7 @@ export default function adana({ types }) {
             start: path.node.loc.end,
             end: path.node.loc.end,
           },
-          group: group,
+          group,
         }))
       );
     }
@@ -372,12 +413,11 @@ export default function adana({ types }) {
         enter(path, state) {
           // Check if file should be instrumented or not,
           // yes, continue; otherwise path.skip()
-          // Other TODO thought: collect hash of file, assign that to
-          // coverage; allow "merging" of same-hash coverage where the counters
-          // are incremented. This could be for someone who has to run a program
-          // several times for the same files to cover everything.
+
           meta(state, {
+            hash: hash(state.file.code),
             entries: [],
+            tags: {},
             variable: path.scope.generateUidIdentifier('coverage'),
           });
         },
@@ -397,7 +437,11 @@ export default function adana({ types }) {
       VariableDeclaration: visitVariableDeclaration,
 
       // Statements
-      Statement: visitStatement,
+      ContinueStatement: visitStatement,
+      BreakStatement: visitStatement,
+      ExpressionStatement: visitStatement,
+      ThrowStatement: visitStatement,
+      ReturnStatement: visitStatement,
       TryStatement: visitTryStatement,
       WhileStatement: visitWhileLoop,
       DoWhileStatement: visitWhileLoop,

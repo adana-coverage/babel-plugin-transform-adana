@@ -8,25 +8,31 @@ Minimal, complete code-coverage tool for [babel] 6+.
 ![version](http://img.shields.io/npm/v/babel-plugin-transform-adana.svg?style=flat)
 ![downloads](http://img.shields.io/npm/dm/babel-plugin-transform-adana.svg?style=flat)
 
-Has all the features of [istanbul] including line, function and branch coverage, but works as a [babel] plugin instead of relying on `esparse` and `escodegen`. Works great with [west], [mocha], [jasmine] and probably more.
+Has all the features (and more) of [istanbul] including line, function and branch coverage, but works as a [babel] plugin instead of relying on `esparse` and `escodegen`. Works great with [west], [mocha], [jasmine] and probably more.
 
 Features:
 
  * First-class babel support,
  * Per-line/function/branch coverage,
+ * Tagged instrumentation,
  * Smart branch detection.
 
 TODO:
- * Tagged instrumentation,
+ * User-defined tags,
  * More test cases,
  * Split out bins/reporters into other modules.
+
+## FAQ
+
+ * Why is a line marked not covered when it clearly is? - The `line` algorithm is conservative; if you have any part of a line with 0 hits, then that whole line is frozen at 0.
+ * Why is `let i;`, `function foo() {}`, etc. not marked at all? – Some things are not executable code per se (i.e. declarations). They do nothing to effect program state and are therefore not instrumented.
 
 ## Usage
 
 Install `adana`:
 
 ```sh
-npm install --save-dev babel-plugin-transform-adana
+npm install --save-dev babel-plugin-transform-adana adana-cli
 ```
 
 Setup [babel] to use it:
@@ -35,9 +41,11 @@ Setup [babel] to use it:
 {
 	"env": {
 		"test": {
-			"plugins": [
-				"transform-adana"
-			]
+			"plugins": [[
+				"transform-adana", {
+          "test": "src/**/*.js"
+        }
+			]]
 		}
 	}
 }
@@ -53,14 +61,6 @@ NODE_ENV="test" mocha \
 	--compilers js:babel-core/register \
 	test/*.spec.js
 ```
-
-Run some checks:
-
-```sh
-adana-check --statements 100 --branches 100 --functions 100
-```
-
-
 
 ### Tags
 
@@ -146,6 +146,14 @@ On HMR:
 - clear coverage counters for reloaded modules
 - run reloaded code
 - replace coverage counters for reloaded modules
+
+### Other Notes
+
+```js
+// TODO: Allow "merging" of same-hash coverage where the counters are
+// incremented. This could be for someone who has to run a program
+// several times for the same files to cover everything.
+```
 
 
 [babel]: http://babeljs.io

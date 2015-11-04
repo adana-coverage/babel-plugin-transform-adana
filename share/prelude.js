@@ -12,6 +12,8 @@ const VARIABLE = (exports => {
 
   exports.__coverage__ = exports.__coverage__ || { };
   exports.__coverage__[FILE] = {
+    hash: HASH,
+    tags: TAGS,
     path: FILE,
     counters: counters,
     locations: LOCATIONS,
