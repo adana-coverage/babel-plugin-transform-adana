@@ -4,7 +4,8 @@ import path from 'path';
 import vm from 'vm';
 import { transformFile } from 'babel-core';
 
-import analyze from '../../src/analyze';
+/* eslint import/no-unresolved: 0 */
+import analyze from '../../dist/analyze';
 
 describe('Instrumenter', () => {
   const options = {
