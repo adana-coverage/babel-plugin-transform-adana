@@ -7,7 +7,6 @@ let x = 0;
 let y = 0;
 let z = 0;
 
-// adana: +foo
 if (foo) {
   ++x;
 } else if (bar) {

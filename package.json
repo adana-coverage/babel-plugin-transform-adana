@@ -2,11 +2,14 @@
   "name": "babel-plugin-transform-adana",
   "version": "0.1.0",
   "description": "A better instanbul.",
+  "repository": "izaakschroeder/babel-plugin-transform-adana",
+  "license": "CC0-1.0",
   "main": "index.js",
   "keywords": [
     "coverage",
     "istanbul",
-    "babel-plugin"
+    "babel-plugin",
+    "babel"
   ],
   "scripts": {
     "lint": "./node_modules/.bin/eslint --ignore-path .gitignore .",
@@ -17,22 +20,19 @@
   },
   "devDependencies": {
     "babel-cli": "^6.0.2",
-    "babel-eslint": "^4.1.3",
     "babel-plugin-syntax-object-rest-spread": "^6.0.2",
     "babel-plugin-transform-object-rest-spread": "^6.0.2",
     "babel-preset-es2015": "^6.0.11",
     "chai": "^3.4.0",
     "eslint": "^1.8.0",
-    "eslint-config-metalab": "^0.2.2",
-    "eslint-plugin-filenames": "^0.1.2",
-    "eslint-plugin-import": "^0.7.9",
+    "eslint-config-metalab": "^0.3.0",
     "mocha": "^2.2.5"
   },
   "peerDependencies": {
-    "babel": ">=6.0.4"
+    "babel-core": ">=6.0.20"
   },
   "dependencies": {
-    "babel-literal-to-ast": "^0.1.1",
+    "babel-literal-to-ast": "^0.1.2",
     "babel-template": "^6.0.14",
     "mkdirp": "^0.5.1"
   }

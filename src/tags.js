@@ -7,6 +7,6 @@ export default function tags(path) {
     .map(n => n.node.leadingComments || [])
     .reduce((entries, comment) => {
       const result = COMMENT_PATTERN.exec(comment.value);
-      return result ? [...entries, result[2]] : entries;
+      return result ? [ ...entries, result[2] ] : entries;
     }, []);
 }

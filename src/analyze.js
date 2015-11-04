@@ -7,7 +7,7 @@ function merge({ locations, counters }) {
 }
 
 function type(name, base) {
-  const entries = base.filter(loc => loc.type === name);
+  const entries = base.filter(loc => !!~loc.tags.indexOf(name));
   const covered = entries.reduce((sum, { passed }) => {
     return passed ? sum + 1 : sum;
   }, 0);
@@ -17,12 +17,9 @@ function type(name, base) {
   return entries;
 }
 
-function lines(entries) {
+function lines(statements) {
   const index = { };
-  entries.forEach(entry => {
-    if (entry.type !== 'statement') {
-      return;
-    }
+  statements.forEach(entry => {
     for (let i = entry.loc.start.line; i <= entry.loc.end.line; ++i) {
       // If a statement hasn't been covered ensure the line is marked as
       // not covered.

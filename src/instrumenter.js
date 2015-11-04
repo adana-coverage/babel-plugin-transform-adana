@@ -2,10 +2,38 @@
 import prelude from './prelude';
 import meta from './meta';
 
-function key(location) {
-  return `${location.line}:${location.column}`;
+/**
+ * Create an opaque, unique key for a given node. Useful for tagging the node
+ * in separate places.
+ * @param {Object} node Babel node to derive key from.
+ * @returns {String} String key.
+ */
+function key(node) {
+  if (node.loc) {
+    const location = node.loc.start;
+    return `${location.line}:${location.column}`;
+  }
+  // TODO: Determine a branch name when location is lacking.
+  return 'lolol';
 }
 
+/**
+ * Some nodes need to marked as non-instrumentable; since babel will apply
+ * our plugin to nodes we create, we have to be careful to not put ourselves
+ * into an infinite loop.
+ * @param {Object} node Babel AST node.
+ * @returns {Object} Babel AST node that won't be instrumented.
+ */
+function X(node) {
+  node.__adana = true;
+  return node;
+}
+
+/**
+ * Create the transform-adana babel plugin.
+ * @param {Object} types As per `babel`.
+ * @returns {Object} `babel` plugin object.
+ */
 export default function adana({ types }) {
   /**
    * Create a chunk of code that marks the specified node as having
@@ -15,33 +43,31 @@ export default function adana({ types }) {
    * @returns {Object} AST node for marking coverage.
    */
   function createMarker(state, options) {
-    const { source, type, loc, name, group } = options;
-    const origin = loc || (source && source.node.loc);
+    const { tags, loc, name, group } = options;
     const coverage = meta(state);
     const id = coverage.entries.length;
 
     coverage.entries.push({
       id,
-      loc: origin,
-      type: type,
+      loc,
+      tags,
       name,
       group,
     });
 
-    const marker = types.unaryExpression('++', types.memberExpression(
+    // Maker is simply a statement incrementing a coverage variable.
+    return X(types.unaryExpression('++', types.memberExpression(
       coverage.variable,
-      types.numberLiteral(id),
+      types.numericLiteral(id),
       true
-    ));
-    marker.__adana = true;
-    return marker;
+    )));
   }
 
-  function X(node) {
-    node.__adana = true;
-    return node;
-  }
-
+  /**
+   * [isInstrumentableStatement description]
+   * @param   {[type]}  path [description]
+   * @returns {Boolean}      [description]
+   */
   function isInstrumentableStatement(path) {
     const parent = path.parentPath;
     return !parent.isReturnStatement() &&
@@ -51,19 +77,28 @@ export default function adana({ types }) {
       !parent.isIfStatement();
   }
 
+  /**
+   * Inject a marker that measures whether the node for the given path has
+   * been run or not.
+   * @param {Object} path    [description]
+   * @param {Object} state   [description]
+   * @param {Object} options [description]
+   * @returns {void}
+   */
   function instrument(path, state, options) {
     if (!path.node || !path.node.loc || path.node.__adana) {
       return;
     }
 
+    // This function is here because isInstrumentableStatement() is being
+    // called; we can't create the marker without knowing the result of that,
+    // otherwise dead markers will be created.
     function marker() {
       return createMarker(state, {
         loc: path.node.loc,
         ...options,
       });
     }
-
-    path.node.__adana = true;
 
     if (path.isBlockStatement()) {
       path.unshiftContainer('body', X(types.expressionStatement(marker())));
@@ -78,27 +113,45 @@ export default function adana({ types }) {
     }
   }
 
+  /**
+   * [visitStatement description]
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitStatement(path, state) {
-    instrument(path, state, { type: 'statement' });
+    instrument(path, state, { tags: [ 'statement' ] });
   }
 
+  /**
+   * The function visitor is mainly to track the definitions of functions;
+   * being able ensure how many of your functions have actually been invoked.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitFunction(path, state) {
     if (!path.node.loc) {
       return;
     }
     instrument(path.get('body'), state, {
-      type: 'function',
-      source: path,
-      name: path.node.id ?
-        path.node.id.name :
-        `anonymous-${key(path.node.loc.start)}`,
+      tags: [ 'function' ],
+      name: path.node.id ? path.node.id.name : `@${key(path.node)}`,
       loc: {
         start: path.node.loc.start,
-        end: path.node.body.loc,
+        end: path.node.loc.start,
       },
     });
   }
 
+  /**
+   * Multiple branches based on the result of `case _` and `default`. If you
+   * do not provide a `default` one will be intelligently added for you,
+   * forcing you to cover that case.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitSwitchStatement(path, state) {
     let hasDefault = false;
     path.get('cases').forEach(entry => {
@@ -106,9 +159,9 @@ export default function adana({ types }) {
         hasDefault = true;
       }
       entry.unshiftContainer('consequent', createMarker(state, {
-        type: 'branch',
-        source: path,
-        group: key(path.node.loc.start),
+        tags: [ 'branch' ],
+        loc: path.node.loc,
+        group: key(path.node),
       }));
     });
 
@@ -127,30 +180,39 @@ export default function adana({ types }) {
       // Finally add the default case.
       path.pushContainer('cases', types.switchCase(null, [
         createMarker(state, {
-          type: 'branch',
+          tags: [ 'branch' ],
           loc: {
             start: path.node.loc.end,
             end: path.node.loc.end,
           },
-          source: path,
-          group: key(path.node.loc.start),
+          group: key(path.node),
         }),
         types.breakStatement(),
       ]));
     }
   }
 
+  /**
+   * [visitVariableDeclaration description]
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitVariableDeclaration(path, state) {
     path.get('declarations').forEach(decl => {
       if (decl.has('init')) {
-        instrument(decl.get('init'), state, {
-          type: 'statement',
-          source: decl,
-        });
+        instrument(decl.get('init'), state, { tags: [ 'statement' ] });
       }
     });
   }
 
+  /**
+   * Includes both while and do-while loops. They contain a single branch which
+   * tests the loop condition.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitWhileLoop(path, state) {
     const test = path.get('test');
     // This is a particularly clever use of the fact JS operators are short-
@@ -167,28 +229,36 @@ export default function adana({ types }) {
         '&&',
         test.node,
         createMarker(state, {
-          type: 'branch',
+          tags: [ 'branch' ],
           loc: test.node.loc,
-          group: key(test.node.loc),
+          group: key(test.node),
         })
       ),
       types.unaryExpression(
         '!',
         createMarker(state, {
-          type: 'branch',
+          tags: [ 'branch' ],
           loc: test.node.loc,
-          group: key(test.node.loc),
+          group: key(test.node),
         })
       )
     ));
   }
 
+  /**
+   * The try block can either fully succeed (no error) or it can throw. Both
+   * cases are accounted for.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitTryStatement(path, state) {
+    const group = key(path.node);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
-        type: 'branch',
+        tags: [ 'branch' ],
         loc: path.get('block').node.loc,
-        group: key(path.node.loc),
+        group: group,
       })
     ));
     if (path.has('handler')) {
@@ -196,20 +266,56 @@ export default function adana({ types }) {
         'body',
         types.expressionStatement(
           createMarker(state, {
-            type: 'branch',
+            tags: [ 'branch' ],
             loc: path.get('handler').node.loc,
-            group: key(path.node.loc),
+            group: group,
           })
         )
       );
+    } else {
+      const loc = path.get('block').node.loc.end;
+      path.get('handler').replaceWith(types.catchClause(
+        types.identifier('err'), types.blockStatement([
+          types.expressionStatement(
+            createMarker(state, {
+              tags: [ 'branch' ],
+              loc: {
+                start: loc,
+                end: loc,
+              },
+              group: group,
+            })
+          ),
+          types.throwStatement(
+            types.identifier('err')
+          ),
+        ])
+      ));
     }
   }
 
+  /**
+   * Logical expressions are those using logic operators like `&&` and `||`.
+   * Since logic expressions short-circuit in JS they are effectively branches
+   * and will be treated as such here.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitLogicalExpression(path, state) {
-    instrument(path.get('left'), state, { type: 'branch' });
-    instrument(path.get('right'), state, { type: 'branch' });
+    instrument(path.get('left'), state, { tags: [ 'branch' ] });
+    instrument(path.get('right'), state, { tags: [ 'branch' ] });
   }
 
+  /**
+   * Conditionals are either if/else statements or tenaiary expressions. They
+   * have a test case and two choices (based on the test result). Both cases
+   * are always accounted for, even if the code does not exist for the alternate
+   * case.
+   * @param {[type]} path  [description]
+   * @param {[type]} state [description]
+   * @returns {void}
+   */
   function visitConditional(path, state) {
     if (!path.node.loc) {
       return;
@@ -222,10 +328,12 @@ export default function adana({ types }) {
       return search.node.type === path.node.type &&
         (!search.parentPath || search.parentPath.node.type !== path.node.type);
     }) || path;
-    const group = root.node.loc ? key(root.node.loc.start) : 'lol????';
+
+    // Create the group name based on the root `if` statement.
+    const group = key(root.node);
 
     instrument(path.get('consequent'), state, {
-      type: 'branch',
+      tags: [ 'branch' ],
       loc: {
         start: path.node.loc.start,
         end: path.node.consequent.loc.start,
@@ -235,7 +343,7 @@ export default function adana({ types }) {
 
     if (path.has('alternate') && !path.get('alternate').isIfStatement()) {
       instrument(path.get('alternate'), state, {
-        type: 'branch',
+        tags: [ 'branch' ],
         loc: {
           start: path.node.consequent.loc ?
             path.node.consequent.loc.end : path.node.loc,
@@ -246,7 +354,7 @@ export default function adana({ types }) {
     } else if (!path.has('alternate')) {
       path.get('alternate').replaceWith(types.expressionStatement(
         createMarker(state, {
-          type: 'branch',
+          tags: [ 'branch' ],
           loc: {
             start: path.node.loc.end,
             end: path.node.loc.end,
@@ -257,10 +365,17 @@ export default function adana({ types }) {
     }
   }
 
+  // Create the actual babel plugin object.
   return {
     visitor: {
       Program: {
         enter(path, state) {
+          // Check if file should be instrumented or not,
+          // yes, continue; otherwise path.skip()
+          // Other TODO thought: collect hash of file, assign that to
+          // coverage; allow "merging" of same-hash coverage where the counters
+          // are incremented. This could be for someone who has to run a program
+          // several times for the same files to cover everything.
           meta(state, {
             entries: [],
             variable: path.scope.generateUidIdentifier('coverage'),
