@@ -1,19 +1,17 @@
 
-function merge({ locations, counters }) {
-  return locations.map((loc, index) => {
-    const count = counters[index];
-    return { ...loc, count, passed: count > 0 };
+function type(name, coverage) {
+  const entries = (coverage.tags[name] || []).map(loc => {
+    const count = coverage.counters[loc];
+    return {
+      ...coverage.locations[loc],
+      count,
+      passed: count > 0,
+    };
   });
-}
-
-function type(name, base) {
-  const entries = base.filter(loc => !!~loc.tags.indexOf(name));
   const covered = entries.reduce((sum, { passed }) => {
     return passed ? sum + 1 : sum;
   }, 0);
-
   entries.covered = covered;
-
   return entries;
 }
 
@@ -23,10 +21,10 @@ function lines(statements) {
     for (let i = entry.loc.start.line; i <= entry.loc.end.line; ++i) {
       // If a statement hasn't been covered ensure the line is marked as
       // not covered.
-      if (!entry.count || index[i] === 0) {
-        index[i] = 0;
+      if (i in index) {
+        index[i] = Math.min(index[i], entry.count);
       } else {
-        index[i] = Math.max(index[i] || 0, entry.count);
+        index[i] = entry.count;
       }
     }
   });
@@ -44,13 +42,12 @@ function lines(statements) {
 }
 
 export default function analyze(coverage) {
-  const base = merge(coverage);
-  const statements = type('statement', base);
-  const branches = type('branch', base);
-  const functions = type('function', base);
+  const statements = type('statement', coverage);
+  const branches = type('branch', coverage);
+  const functions = type('function', coverage);
   return {
     statements,
-    lines: lines(statements),
+    lines: lines(type('line', coverage)),
     branches,
     functions,
   };
