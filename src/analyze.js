@@ -42,13 +42,8 @@ function lines(statements) {
 }
 
 export default function analyze(coverage) {
-  const statements = type('statement', coverage);
-  const branches = type('branch', coverage);
-  const functions = type('function', coverage);
-  return {
-    statements,
-    lines: lines(type('line', coverage)),
-    branches,
-    functions,
-  };
+  const results = { };
+  Object.keys(coverage.tags).forEach(tag => results[tag] = type(tag, coverage));
+  results.line = lines(results.line);
+  return results;
 }
