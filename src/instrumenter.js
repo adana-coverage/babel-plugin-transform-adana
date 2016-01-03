@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import prelude from './prelude';
 import meta from './meta';
+import { applyRules, addRules } from './tags';
 
 export function hash(code) {
   return createHash('sha1').update(code).digest('hex');
@@ -54,13 +55,6 @@ export default function adana({ types }) {
     const { tags, loc, name, group } = options;
     const coverage = meta(state);
     const id = coverage.entries.length;
-
-    tags.forEach(tag => {
-      if (!coverage.tags[tag]) {
-        coverage.tags[tag] = [];
-      }
-      coverage.tags[tag].push(coverage.entries.length);
-    });
 
     coverage.entries.push({
       id,
@@ -174,6 +168,17 @@ export default function adana({ types }) {
     }
     let hasDefault = false;
     path.get('cases').forEach(entry => {
+      if (entry.node.test) {
+        addRules(state, entry.node.loc, entry.node.test.trailingComments);
+      }
+      if (entry.node.consequent.length > 1) {
+        addRules(
+          state,
+          entry.node.loc,
+          entry.node.consequent[0].leadingComments
+        );
+      }
+
       if (entry.node.test === null) {
         hasDefault = true;
       }
@@ -380,6 +385,18 @@ export default function adana({ types }) {
     // Create the group name based on the root `if` statement.
     const group = key(root);
 
+    function tagBranch(path) {
+      addRules(state, path.node.loc, path.node.leadingComments);
+      if (path.isBlockStatement() && path.node.body.length > 0) {
+        addRules(state, path.node.loc, path.node.body[0].leadingComments);
+      }
+    }
+
+    tagBranch(path.get('consequent'));
+    if (path.has('alternate')) {
+      tagBranch(path.get('alternate'));
+    }
+
     instrument(path.get('consequent'), state, {
       tags: [ 'branch', 'line' ],
       loc: path.node.consequent.loc,
@@ -417,11 +434,13 @@ export default function adana({ types }) {
           meta(state, {
             hash: hash(state.file.code),
             entries: [],
+            rules: [],
             tags: {},
             variable: path.scope.generateUidIdentifier('coverage'),
           });
         },
         exit(path, state) {
+          applyRules(state);
           path.unshiftContainer('body', prelude(state));
         },
       },

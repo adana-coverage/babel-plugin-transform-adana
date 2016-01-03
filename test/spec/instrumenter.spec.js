@@ -1,4 +1,3 @@
-
 import { expect } from 'chai';
 import path from 'path';
 import vm from 'vm';
@@ -37,7 +36,6 @@ describe('Instrumenter', () => {
       let error = null;
       sandbox.global = { };
       sandbox.exports = { };
-      // console.log(data.code);
       try {
         vm.runInContext(data.code, sandbox);
       } catch (err) {
@@ -50,6 +48,7 @@ describe('Instrumenter', () => {
         ...(!sandbox.global.__coverage__ ?
           { } : analyze(sandbox.global.__coverage__[file])
         ),
+        coverage: sandbox.global.__coverage__[file],
         code: data.code,
         error,
       };
@@ -238,6 +237,38 @@ describe('Instrumenter', () => {
   describe('classes', () => {
     it('should handle exported classes', () => {
       return run('class-export').then(({ statement }) => {
+        expect(statement).to.have.length(2);
+      });
+    });
+  });
+
+  describe('tags', () => {
+    it.skip('should handle line tags', () => {
+      return run('tag-line').then(({ statement }) => {
+        expect(statement).to.have.length(2);
+      });
+    });
+    it('should handle branch tags', () => {
+      return run('tag-branch').then(results => {
+        expect(results).to.have.property('foo').to.have.length(4);
+        expect(results.foo[0]).to.have.property('count', 0);
+        expect(results.foo[1]).to.have.property('count', 1);
+        expect(results.foo[2]).to.have.property('count', 1);
+        expect(results.foo[3]).to.have.property('count', 0);
+        expect(results).to.have.property('bar').to.have.length(4);
+        expect(results.bar[0]).to.have.property('count', 0);
+        expect(results.bar[1]).to.have.property('count', 0);
+        expect(results.bar[2]).to.have.property('count', 1);
+        expect(results.bar[3]).to.have.property('count', 1);
+        expect(results).to.have.property('baz').to.have.length(2);
+        expect(results.baz[0]).to.have.property('count', 1);
+        expect(results.baz[1]).to.have.property('count', 0);
+        expect(results).to.have.property('qux').to.have.length(1);
+        expect(results.qux[0]).to.have.property('count', 0);
+      });
+    });
+    it.skip('should handle block tags', () => {
+      return run('tag-block').then(({ statement }) => {
         expect(statement).to.have.length(2);
       });
     });
