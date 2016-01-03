@@ -158,26 +158,7 @@ import { writeFileSync } from 'fs';
 process.on('exit', () => {
   writeFileSync('coverage/coverage.json', JSON.stringify(__coverage__));
 });
-
 ```
-
-### HMR Spec Coverage
-
-foo.spec.js -> foo.js: overwrite coverage info only for foo.js
-
-On HMR:
-- clear coverage counters for reloaded modules
-- run reloaded code
-- replace coverage counters for reloaded modules
-
-### Other Notes
-
-```js
-// TODO: Allow "merging" of same-hash coverage where the counters are
-// incremented. This could be for someone who has to run a program
-// several times for the same files to cover everything.
-```
-
 
 [babel]: http://babeljs.io
 [istanbul]: https://github.com/gotwarlost/istanbul

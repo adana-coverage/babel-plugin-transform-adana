@@ -1,10 +1,17 @@
 import { createHash } from 'crypto';
+import minimatch from 'minimatch';
 import prelude from './prelude';
 import meta from './meta';
 import { applyRules, addRules } from './tags';
 
 export function hash(code) {
   return createHash('sha1').update(code).digest('hex');
+}
+
+export function skip(state) {
+  const pattern = (state.opts && state.opts.test) || '!**/test/**';
+  return state.file.opts.filename &&
+    !minimatch(state.file.opts.filename, pattern);
 }
 
 /**
@@ -428,9 +435,12 @@ export default function adana({ types }) {
     visitor: {
       Program: {
         enter(path, state) {
-          // Check if file should be instrumented or not,
-          // yes, continue; otherwise path.skip()
-
+          // Check if file should be instrumented or not.
+          if (skip(state)) {
+            path.skip();
+            return;
+          }
+          // Setup necessary coverage data for the file.
           meta(state, {
             hash: hash(state.file.code),
             entries: [],

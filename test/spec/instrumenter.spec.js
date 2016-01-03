@@ -11,7 +11,9 @@ import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: [ '../' ],
+    plugins: [ [ '../', {
+      test: '!**test/spec/*.spec.js',
+    } ] ],
     presets: [ ],
     sourceMaps: true,
     ast: false,
@@ -59,6 +61,56 @@ describe('Instrumenter', () => {
     it('should fail with no location', () => {
       expect(() => key({ node: { } })).to.throw(TypeError);
     });
+  });
+
+  it('should ignore non-matching files', () => {
+    const fixture = parse(`let i = 0; ++i;`);
+    const instrumenter = plugin({ types });
+    const metadata = { };
+    traverse(
+      fixture,
+      instrumenter.visitor,
+      null,
+      {
+        file: {
+          code: '',
+          metadata,
+          opts: {
+            filenameRelative: 'foo.css',
+            filename: '/foo/foo.css',
+          },
+        },
+        opts: {
+          test: '**/*.js',
+        },
+      }
+    );
+    expect(metadata).to.not.have.property('coverage');
+  });
+
+  it('should accept matching files', () => {
+    const fixture = parse(`let i = 0; ++i;`);
+    const instrumenter = plugin({ types });
+    const metadata = { };
+    traverse(
+      fixture,
+      instrumenter.visitor,
+      null,
+      {
+        file: {
+          code: '',
+          metadata,
+          opts: {
+            filenameRelative: 'foo.js',
+            filename: '/foo/foo.js',
+          },
+        },
+        opts: {
+          test: '**/*.js',
+        },
+      }
+    );
+    expect(metadata).to.have.property('coverage');
   });
 
   describe('statements', () => {
