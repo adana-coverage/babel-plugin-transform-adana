@@ -1,13 +1,13 @@
 sudo: false
 language: node_js
 node_js:
-- 4.1.1
-- '0.12'
+  - 4
+  - 0.12
 before_install:
-- npm update -g npm
+  - npm update -g npm
 after_success:
-- npm install coveralls
-- cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+  - npm install coveralls
+  - cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
 deploy:
   provider: npm
   email: izaak.schroeder@gmail.com
