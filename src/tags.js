@@ -6,6 +6,8 @@ export default function tags(path) {
   return path.getAncestry()
     .map(n => n.node.leadingComments || [])
     .reduce((entries, comment) => {
+      // comment.type === 'CommentLine'
+      // comment.type === 'CommentBlock'
       const result = COMMENT_PATTERN.exec(comment.value);
       return result ? [ ...entries, result[2] ] : entries;
     }, []);

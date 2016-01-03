@@ -4,7 +4,11 @@ import analyze from './analyze';
 export default function lcov(coverage) {
   const files = Object.keys(coverage);
   return files.map(file => {
-    const { functions, lines, branches } = analyze(coverage[file]);
+    const {
+      function: functions = [],
+      line: lines = [],
+      branch: branches = [],
+    } = analyze(coverage[file]);
     return `
 TN:
 SF: ${file}
