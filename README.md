@@ -44,14 +44,78 @@ Setup your `.babelrc` to use it:
 
 **IMPORTANT**: This plugin works best when it runs as the _first_ plugin in the babel transform list, since its purpose is to instrument your _original code_, not whatever other transformations happen to get made.
 
+**NOTE**: This plugin is only responsible for _instrumenting_ your code, not verifying the coverage information or reporting. You can install something like `adana-cli` to get something like `instanbul check-coverage`. See the [adana-cli] repository for more information.
+
+### mocha
+
+Usage with [mocha] is straight-forward. The only thing you need to do after running your code is dump the coverage information to disk so it can be processed; [mocha] can do this via its `-r` flag.
+
+Install the necessary packages:
+
 ```sh
+npm install --save-dev mocha
+npm install --save-dev adana-cli adana-format-lcov babel-plugin-transform-adana
+```
+
+Start testing with mocha:
+
+```sh
+#!/bin/sh
+
+# Run tests and dump the coverage information.
 NODE_ENV="test" mocha \
   -r babel-plugin-transform-adana/dump \
   --compilers js:babel-core/register \
   test/*.spec.js
+
+# Upload coverage data to coveralls.
+cat ./coverage/coverage.json \
+  | ./node_modules/.bin/adana --format lcov \
+  | ./node_modules/coveralls/bin/coveralls.js
 ```
 
-**NOTE**: This plugin is only responsible for _instrumenting_ your code, not verifying the coverage information or reporting. You can install something like `adana-cli` to get something like `instanbul check-coverage`. See the [adana-cli] repository for more information.
+### jasmine
+
+Usage with [jasmine] is less straight-forward than with [mocha] since there is no native babel support. The package [jasmine-es6] can be used to use [babel] (and therefore adana) with [jasmine].
+
+Install the necessary packages:
+
+```sh
+npm install --save-dev jasmine-es6
+npm install --save-dev adana-cli adana-format-lcov babel-plugin-transform-adana
+```
+
+Add the output tool as a helper to jasmine via `jasmine.json` in order to ensure your coverage data gets output:
+
+```json
+{
+  "spec_dir": "spec",
+  "spec_files": [
+    "**/*[sS]pec.js"
+  ],
+  "helpers": [
+    "../node_modules/jasmine-es6/lib/install.js",
+    "../node_modules/babel-plugin-transform-adana/dump.js",
+    "helpers/**/*.js"
+  ]
+}
+```
+
+Start testing with jasmine:
+
+```sh
+#!/bin/sh
+NODE_ENV="test" jasmine
+
+# Upload coverage data to coveralls.
+cat ./coverage/coverage.json \
+  | ./node_modules/.bin/adana --format lcov \
+  | ./node_modules/coveralls/bin/coveralls.js
+```
+
+### west
+
+TODO: Write me!
 
 ## Tags
 
@@ -81,7 +145,6 @@ if (foo(1)) {
 
 ## FAQ
 
- * Why is a line marked not covered when it clearly is? - The `line` algorithm is conservative; if you have any part of a line with 0 hits, then that whole line is frozen at 0.
  * Why is `let i;`, `function foo() {}`, etc. not marked at all? – Some things are not executable code per se (i.e. declarations). They do nothing to effect program state and are therefore not instrumented.
 
 ## Configuration
@@ -92,13 +155,16 @@ There are a couple of configuration options available to control how your progra
 {
   // Pattern to match to determine if the file should be covered. The pattern
   // is a minimatch compatible string.
-  test: 'src/**/*.js'
+  test: 'src/**/*.js',
+  // Name of the global variable to store all the collected coverage information
+  // in.
+  global: '__coverage__'
 }
 ```
 
 ## API
 
-`adana` is simply a [babel] transformer that injects markers to determine if specific parts of the code have been run. To inject these markers simply add `transform-adana` as a plugin and use [babel] normally:
+Again, this plugin is simply a [babel] transformer that injects markers to determine if specific parts of the code have been run. Usage is as a normal babel plugin:
 
 ```javascript
 import { transform } from 'babel-core';
@@ -128,42 +194,27 @@ The `__coverage__` object has the following shape:
   hash: '2892834823482374234234235',
   // Path to the file being instrumented.
   path: 'some/file.js',
-  // Map between tags and entries in locations.
-  tags: {
-    tagA: [ 1, 2 ],
-    tagB: [ 0, 2, 4 ],
-    ...
-  }
-  // Array of counters; the index in this list maps to the same index in the
-  // locations array.
-  counters: [ 0, 0, ... ],
   // Detailed information about every location that's been instrumented.
   locations: [{
     id: 0,
     loc: { start: { line: 0, column 0 }, end: { line: 0, column: 0 } },
     name: 'foo',
     group: 'bar',
-    tags: [ 'tagA', 'tagB' ]
+    tags: [ 'tagA', 'tagB' ],
+    count: 5
   }, {
     ...
   }, ...]
 }
 ```
 
-```javascript
-/* global __coverage__ */
-import { writeFileSync } from 'fs';
-
-// Dump that data to disk after tests have finished.
-process.on('exit', () => {
-  writeFileSync('coverage/coverage.json', JSON.stringify(__coverage__));
-});
-```
+More useful processing of this object can be done with [adana-analyze].
 
 [babel]: http://babeljs.io
 [istanbul]: https://github.com/gotwarlost/istanbul
 [mocha]: http://mochajs.org/
 [jasmine]: http://jasmine.github.io/
 [west]: https://www.github.com/izaakschroeder/west
-[lcov]: http://ltp.sourceforge.net/coverage/lcov/geninfo.1.php
-[adana-cli]: https://www.github.com/izaakschroeder/adana-cli
+[adana-cli]: https://www.github.com/adana-coverage/adana-cli
+[adana-analyze]: https://www.github.com/adana-coverage/adana-analyze
+[jasmine-es6]: https://github.com/vinsonchuong/jasmine-es6

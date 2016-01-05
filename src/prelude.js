@@ -12,9 +12,10 @@ const render = template(readFileSync(
 
 export default function prelude(state) {
   const coverage = meta(state);
-  //  ||
   const name = state.file.opts.filenameRelative;
+  const global = (state.opts && state.opts.global) || '__coverage__';
   return render({
+    GLOBAL: astify(global),
     HASH: astify(coverage.hash),
     TAGS: astify(coverage.tags),
     VARIABLE: coverage.variable,

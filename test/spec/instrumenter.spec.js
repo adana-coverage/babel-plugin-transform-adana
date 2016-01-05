@@ -3,10 +3,10 @@ import path from 'path';
 import vm from 'vm';
 import { transformFile, types, traverse } from 'babel-core';
 import { parse } from 'babylon';
+import { tags } from 'adana-analyze';
 
 /* eslint import/no-unresolved: 0 */
 /* eslint import/named: 0 */
-import analyze from '../../dist/analyze';
 import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
@@ -47,8 +47,8 @@ describe('Instrumenter', () => {
         return Promise.reject(error);
       }
       return {
-        ...(!sandbox.global.__coverage__ ?
-          { } : analyze(sandbox.global.__coverage__[file])
+        tags: (!sandbox.global.__coverage__ ?
+          { } : tags(sandbox.global.__coverage__[file].locations)
         ),
         coverage: sandbox.global.__coverage__[file],
         code: data.code,
@@ -115,10 +115,10 @@ describe('Instrumenter', () => {
 
   describe('statements', () => {
     it('should cover simple statements', () => {
-      return run('statements').then(({ statement }) => {
-        expect(statement).to.have.length(2);
-        expect(statement[0]).to.have.property('count', 1);
-        expect(statement[1]).to.have.property('count', 1);
+      return run('statements').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+        expect(tags.statement[1]).to.have.property('count', 1);
       });
     });
   });
@@ -138,12 +138,12 @@ describe('Instrumenter', () => {
       expect(metadata.coverage).to.have.property('entries').to.have.length(0);
     });
     it('should cover do-while loops', () => {
-      return run('do-while').then(({ branch, statement }) => {
-        expect(statement).to.have.length(3);
-        expect(statement[2]).to.have.property('count', 5);
-        expect(branch).to.have.length(2);
-        expect(branch[0]).to.have.property('count', 4);
-        expect(branch[1]).to.have.property('count', 1);
+      return run('do-while').then(({ tags }) => {
+        expect(tags.statement).to.have.length(3);
+        expect(tags.statement[2]).to.have.property('count', 5);
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 4);
+        expect(tags.branch[1]).to.have.property('count', 1);
       });
     });
   });
@@ -163,64 +163,64 @@ describe('Instrumenter', () => {
       expect(metadata.coverage).to.have.property('entries').to.have.length(0);
     });
     it('should cover exceptions', () => {
-      return run('try-catch').then(({ branch }) => {
-        expect(branch).to.have.length(2);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 1);
+      return run('try-catch').then(({ tags }) => {
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 1);
       });
     });
     it('should cover exceptions', () => {
       return run('try-no-catch', { error: true })
-        .then(({ branch, error }) => {
+        .then(({ tags, error }) => {
           expect(error).to.not.be.null;
-          expect(branch).to.have.length(2);
-          expect(branch[0]).to.have.property('count', 0);
-          expect(branch[1]).to.have.property('count', 1);
+          expect(tags.branch).to.have.length(2);
+          expect(tags.branch[0]).to.have.property('count', 0);
+          expect(tags.branch[1]).to.have.property('count', 1);
         });
     });
   });
 
   describe('functions', () => {
     it('should cover functions', () => {
-      return run('function').then(result => {
-        expect(result.function).to.have.length(2);
-        expect(result.function[0]).to.have.property('count', 2);
-        expect(result.function[1]).to.have.property('count', 0);
+      return run('function').then(({ tags }) => {
+        expect(tags.function).to.have.length(2);
+        expect(tags.function[0]).to.have.property('count', 2);
+        expect(tags.function[1]).to.have.property('count', 0);
       });
     });
     it('should cover arrow functions', () => {
-      return run('arrow-function').then(result => {
-        expect(result.function).to.have.length(1);
-        expect(result.function[0]).to.have.property('count', 1);
+      return run('arrow-function').then(({ tags }) => {
+        expect(tags.function).to.have.length(1);
+        expect(tags.function[0]).to.have.property('count', 1);
       });
     });
   });
 
   describe('ternary expressions', () => {
     it('should cover ternary expressions', () => {
-      return run('ternary').then(({ branch }) => {
-        expect(branch).to.have.length(2);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 1);
+      return run('ternary').then(({ tags }) => {
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 1);
       });
     });
   });
 
   describe('if blocks', () => {
     it('should cover if-else-if blocks', () => {
-      return run('if-else-if').then(({ branch }) => {
-        expect(branch).to.have.length(4);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 0);
-        expect(branch[2]).to.have.property('count', 1);
+      return run('if-else-if').then(({ tags }) => {
+        expect(tags.branch).to.have.length(4);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 0);
+        expect(tags.branch[2]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });
     it('should cover if-else blocks', () => {
-      return run('if-else').then(({ branch }) => {
-        expect(branch).to.have.length(2);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 1);
+      return run('if-else').then(({ tags }) => {
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });
@@ -228,14 +228,14 @@ describe('Instrumenter', () => {
 
   describe('logic expressions', () => {
     it('should cover logic', () => {
-      return run('logic').then(({ branch }) => {
-        expect(branch).to.have.length(6);
-        expect(branch[0]).to.have.property('count', 1);
-        expect(branch[1]).to.have.property('count', 0);
-        expect(branch[2]).to.have.property('count', 1);
-        expect(branch[3]).to.have.property('count', 0);
-        expect(branch[4]).to.have.property('count', 0);
-        expect(branch[5]).to.have.property('count', 0);
+      return run('logic').then(({ tags }) => {
+        expect(tags.branch).to.have.length(6);
+        expect(tags.branch[0]).to.have.property('count', 1);
+        expect(tags.branch[1]).to.have.property('count', 0);
+        expect(tags.branch[2]).to.have.property('count', 1);
+        expect(tags.branch[3]).to.have.property('count', 0);
+        expect(tags.branch[4]).to.have.property('count', 0);
+        expect(tags.branch[5]).to.have.property('count', 0);
         // TODO: Ensure all branches map to same group
       });
     });
@@ -256,20 +256,20 @@ describe('Instrumenter', () => {
       expect(metadata.coverage).to.have.property('entries').to.have.length(0);
     });
     it('should cover switch statements', () => {
-      return run('switch').then(({ branch }) => {
-        expect(branch).to.have.length(3);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 0);
-        expect(branch[2]).to.have.property('count', 1);
+      return run('switch').then(({ tags }) => {
+        expect(tags.branch).to.have.length(3);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 0);
+        expect(tags.branch[2]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });
     it('should cover switch statements without `default` rules', () => {
-      return run('switch-no-default').then(({ branch }) => {
-        expect(branch).to.have.length(3);
-        expect(branch[0]).to.have.property('count', 0);
-        expect(branch[1]).to.have.property('count', 0);
-        expect(branch[2]).to.have.property('count', 1);
+      return run('switch-no-default').then(({ tags }) => {
+        expect(tags.branch).to.have.length(3);
+        expect(tags.branch[0]).to.have.property('count', 0);
+        expect(tags.branch[1]).to.have.property('count', 0);
+        expect(tags.branch[2]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });
@@ -277,10 +277,10 @@ describe('Instrumenter', () => {
 
   describe('while loops', () => {
     it('should cover while loops', () => {
-      return run('while').then(({ branch }) => {
-        expect(branch).to.have.length(2);
-        expect(branch[0]).to.have.property('count', 4);
-        expect(branch[1]).to.have.property('count', 1);
+      return run('while').then(({ tags }) => {
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 4);
+        expect(tags.branch[1]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
       });
     });
@@ -288,40 +288,40 @@ describe('Instrumenter', () => {
 
   describe('classes', () => {
     it('should handle exported classes', () => {
-      return run('class-export').then(({ statement }) => {
-        expect(statement).to.have.length(2);
+      return run('class-export').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
       });
     });
   });
 
   describe('tags', () => {
     it.skip('should handle line tags', () => {
-      return run('tag-line').then(({ statement }) => {
-        expect(statement).to.have.length(2);
+      return run('tag-line').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
       });
     });
     it('should handle branch tags', () => {
-      return run('tag-branch').then(results => {
-        expect(results).to.have.property('foo').to.have.length(4);
-        expect(results.foo[0]).to.have.property('count', 0);
-        expect(results.foo[1]).to.have.property('count', 1);
-        expect(results.foo[2]).to.have.property('count', 1);
-        expect(results.foo[3]).to.have.property('count', 0);
-        expect(results).to.have.property('bar').to.have.length(4);
-        expect(results.bar[0]).to.have.property('count', 0);
-        expect(results.bar[1]).to.have.property('count', 0);
-        expect(results.bar[2]).to.have.property('count', 1);
-        expect(results.bar[3]).to.have.property('count', 1);
-        expect(results).to.have.property('baz').to.have.length(2);
-        expect(results.baz[0]).to.have.property('count', 1);
-        expect(results.baz[1]).to.have.property('count', 0);
-        expect(results).to.have.property('qux').to.have.length(1);
-        expect(results.qux[0]).to.have.property('count', 0);
+      return run('tag-branch').then(({ tags }) => {
+        expect(tags).to.have.property('foo').to.have.length(4);
+        expect(tags.foo[0]).to.have.property('count', 0);
+        expect(tags.foo[1]).to.have.property('count', 1);
+        expect(tags.foo[2]).to.have.property('count', 1);
+        expect(tags.foo[3]).to.have.property('count', 0);
+        expect(tags).to.have.property('bar').to.have.length(4);
+        expect(tags.bar[0]).to.have.property('count', 0);
+        expect(tags.bar[1]).to.have.property('count', 0);
+        expect(tags.bar[2]).to.have.property('count', 1);
+        expect(tags.bar[3]).to.have.property('count', 1);
+        expect(tags).to.have.property('baz').to.have.length(2);
+        expect(tags.baz[0]).to.have.property('count', 1);
+        expect(tags.baz[1]).to.have.property('count', 0);
+        expect(tags).to.have.property('qux').to.have.length(1);
+        expect(tags.qux[0]).to.have.property('count', 0);
       });
     });
     it.skip('should handle block tags', () => {
-      return run('tag-block').then(({ statement }) => {
-        expect(statement).to.have.length(2);
+      return run('tag-block').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
       });
     });
   });
