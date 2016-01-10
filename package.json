@@ -19,6 +19,9 @@
     "test": "npm run lint && npm run spec"
   },
   "devDependencies": {
+    "adana-analyze": "^0.1.0",
+    "adana-cli": "^0.1.0",
+    "adana-format-lcov": "^0.1.0",
     "babel-cli": "^6.0.2",
     "babel-plugin-syntax-object-rest-spread": "^6.0.2",
     "babel-plugin-transform-object-rest-spread": "^6.0.2",

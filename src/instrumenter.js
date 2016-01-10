@@ -69,12 +69,17 @@ export default function adana({ types }) {
       tags,
       name,
       group,
+      count: 0,
     });
 
     // Maker is simply a statement incrementing a coverage variable.
     return X(types.unaryExpression('++', types.memberExpression(
-      coverage.variable,
-      types.numericLiteral(id),
+      types.memberExpression(
+        coverage.variable,
+        types.numericLiteral(id),
+        true
+      ),
+      types.stringLiteral('count'),
       true
     )));
   }

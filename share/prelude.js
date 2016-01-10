@@ -1,29 +1,13 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
 const VARIABLE = (exports => {
-  const hasTypedArray = typeof Uint32Array !== 'undefined';
-  const counters = hasTypedArray ? new Uint32Array(COUNT) : [ ];
-
-  function reset() {
-    for (let i = 0; i < counters.length; ++i) {
-      counters[i] = 0;
-    }
-  }
-
-  exports.__coverage__ = exports.__coverage__ || { };
-  exports.__coverage__[FILE] = {
+  exports[GLOBAL] = exports[GLOBAL] || { };
+  const coverage = exports[GLOBAL][FILE] = {
     hash: HASH,
-    tags: TAGS,
     path: FILE,
-    counters: counters,
     locations: LOCATIONS,
   };
-
-  if (!hasTypedArray) {
-    reset();
-  }
-
-  return counters;
+  return coverage.locations;
 })(
   typeof global !== 'undefined' ? global : this
 );

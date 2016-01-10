@@ -6,4 +6,7 @@ describe('dump', () => {
   it('should output the coverage data', () => {
     dump({ coverage: { }, path: '/tmp' });
   });
+  it('should output pretty print if desired', () => {
+    dump({ pretty: true, coverage: { }, path: '/tmp' });
+  });
 });

@@ -24,10 +24,6 @@ export function applyRules(state) {
       const value = result[tag];
       if (value) {
         output.push(tag);
-        if (!coverage.tags[tag]) {
-          coverage.tags[tag] = [];
-        }
-        coverage.tags[tag].push(entry.id);
       }
     });
     entry.tags = output;
