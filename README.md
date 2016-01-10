@@ -2,8 +2,8 @@
 
 Minimal, complete code-coverage tool for [babel] 6+.
 
-![build status](http://img.shields.io/travis/izaakschroeder/babel-plugin-transform-adana/master.svg?style=flat)
-![coverage](http://img.shields.io/coveralls/izaakschroeder/babel-plugin-transform-adana/master.svg?style=flat)
+![build status](http://img.shields.io/travis/adana-coverage/babel-plugin-transform-adana/master.svg?style=flat)
+![coverage](http://img.shields.io/coveralls/adana-coverage/babel-plugin-transform-adana/master.svg?style=flat)
 ![license](http://img.shields.io/npm/l/babel-plugin-transform-adana.svg?style=flat)
 ![version](http://img.shields.io/npm/v/babel-plugin-transform-adana.svg?style=flat)
 ![downloads](http://img.shields.io/npm/dm/babel-plugin-transform-adana.svg?style=flat)
