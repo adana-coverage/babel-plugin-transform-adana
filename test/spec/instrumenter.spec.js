@@ -181,6 +181,19 @@ describe('Instrumenter', () => {
   });
 
   describe('functions', () => {
+    it('should ignore previously instrumented function', () => {
+      const fixture = parse(`function foo() { };`);
+      const instrumenter = plugin({ types });
+      const metadata = { };
+      fixture.program.body[0].__adana = true;
+      traverse(
+        fixture,
+        instrumenter.visitor,
+        null,
+        { file: { code: '', metadata, opts: { filenameRelative: '' } } }
+      );
+      expect(metadata.coverage).to.have.property('entries').to.have.length(0);
+    });
     it('should cover functions', () => {
       return run('function').then(({ tags }) => {
         expect(tags.function).to.have.length(2);
