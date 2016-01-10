@@ -107,10 +107,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function instrument(path, state, options) {
-    if (ignore(path)) {
-      return;
-    }
-
     // This function is here because isInstrumentableStatement() is being
     // called; we can't create the marker without knowing the result of that,
     // otherwise dead markers will be created.
@@ -435,52 +431,49 @@ export default function adana({ types }) {
     }
   }
 
+  const visitor = {
+    // Expressions
+    ArrowFunctionExpression: visitFunction,
+    FunctionExpression: visitFunction,
+    LogicalExpression: visitLogicalExpression,
+    ConditionalExpression: visitConditional,
+
+    // Declarations
+    FunctionDeclaration: visitFunction,
+    VariableDeclaration: visitVariableDeclaration,
+
+    // Statements
+    ContinueStatement: visitStatement,
+    BreakStatement: visitStatement,
+    ExpressionStatement: visitStatement,
+    ThrowStatement: visitStatement,
+    ReturnStatement: visitStatement,
+    TryStatement: visitTryStatement,
+    WhileStatement: visitWhileLoop,
+    DoWhileStatement: visitWhileLoop,
+    IfStatement: visitConditional,
+    SwitchStatement: visitSwitchStatement,
+  };
+
   // Create the actual babel plugin object.
   return {
     visitor: {
-      Program: {
-        enter(path, state) {
-          // Check if file should be instrumented or not.
-          if (skip(state)) {
-            path.skip();
-            return;
-          }
-          // Setup necessary coverage data for the file.
-          meta(state, {
-            hash: hash(state.file.code),
-            entries: [],
-            rules: [],
-            tags: {},
-            variable: path.scope.generateUidIdentifier('coverage'),
-          });
-        },
-        exit(path, state) {
-          applyRules(state);
-          path.unshiftContainer('body', prelude(state));
-        },
+      Program(path, state) {
+        // Check if file should be instrumented or not.
+        if (skip(state)) {
+          return;
+        }
+        meta(state, {
+          hash: hash(state.file.code),
+          entries: [],
+          rules: [],
+          tags: {},
+          variable: path.scope.generateUidIdentifier('coverage'),
+        });
+        path.traverse(visitor, state);
+        applyRules(state);
+        path.unshiftContainer('body', prelude(state));
       },
-
-      // Expressions
-      ArrowFunctionExpression: visitFunction,
-      FunctionExpression: visitFunction,
-      LogicalExpression: visitLogicalExpression,
-      ConditionalExpression: visitConditional,
-
-      // Declarations
-      FunctionDeclaration: visitFunction,
-      VariableDeclaration: visitVariableDeclaration,
-
-      // Statements
-      ContinueStatement: visitStatement,
-      BreakStatement: visitStatement,
-      ExpressionStatement: visitStatement,
-      ThrowStatement: visitStatement,
-      ReturnStatement: visitStatement,
-      TryStatement: visitTryStatement,
-      WhileStatement: visitWhileLoop,
-      DoWhileStatement: visitWhileLoop,
-      IfStatement: visitConditional,
-      SwitchStatement: visitSwitchStatement,
     },
   };
 }
