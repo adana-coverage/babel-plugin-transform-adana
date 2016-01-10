@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-adana",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A better instanbul.",
   "repository": "izaakschroeder/babel-plugin-transform-adana",
   "license": "CC0-1.0",
