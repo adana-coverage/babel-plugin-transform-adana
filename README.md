@@ -34,7 +34,7 @@ Setup your `.babelrc` to use it:
     "test": {
       "plugins": [[
         "transform-adana", {
-          "test": "src/**/*.js"
+          "ignore": "test/**/*"
         }
       ]]
     }
@@ -154,8 +154,14 @@ There are a couple of configuration options available to control how your progra
 ```js
 {
   // Pattern to match to determine if the file should be covered. The pattern
-  // is a minimatch compatible string.
-  test: 'src/**/*.js',
+  // must be matched for coverage to be enabled for the file. Takes precedence
+  // over `ignore`.
+  // See `only` of https://babeljs.io/docs/usage/options/
+  only: 'src/**/*.js',
+  // Pattern to match to determine if the file should NOT be covered. The
+  // pattern must NOT be matched for coverage to be enabled for the file.
+  // See `ignore` of https://babeljs.io/docs/usage/options/
+  ignore: 'test/**/*',
   // Name of the global variable to store all the collected coverage information
   // in.
   global: '__coverage__'

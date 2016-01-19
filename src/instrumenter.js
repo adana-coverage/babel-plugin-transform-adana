@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import minimatch from 'minimatch';
+import { util } from 'babel-core';
 import prelude from './prelude';
 import meta from './meta';
 import { applyRules, addRules } from './tags';
@@ -8,10 +8,16 @@ export function hash(code) {
   return createHash('sha1').update(code).digest('hex');
 }
 
-export function skip(state) {
-  const pattern = (state.opts && state.opts.test) || '!**/test/**';
-  return state.file.opts.filename &&
-    !minimatch(state.file.opts.filename, pattern);
+export function skip({ opts, file } = { }) {
+  if (file && opts) {
+    const { ignore = [], only } = opts;
+    return util.shouldIgnore(
+      file.opts.filename,
+      util.arrayify(ignore, util.regexify),
+      only ? util.arrayify(only, util.regexify) : null
+    );
+  }
+  return false;
 }
 
 /**
