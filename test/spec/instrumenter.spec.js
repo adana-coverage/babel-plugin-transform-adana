@@ -12,7 +12,7 @@ import plugin, { key } from '../../dist/instrumenter';
 describe('Instrumenter', () => {
   const options = {
     plugins: [ [ '../', {
-      test: '!**test/spec/*.spec.js',
+      ignore: 'test/spec/*.spec.js',
     } ] ],
     presets: [ ],
     sourceMaps: true,
@@ -63,7 +63,7 @@ describe('Instrumenter', () => {
     });
   });
 
-  it('should ignore non-matching files', () => {
+  it('should ignore non-matching files via `ignore`', () => {
     const fixture = parse(`let i = 0; ++i;`);
     const instrumenter = plugin({ types });
     const metadata = { };
@@ -81,7 +81,32 @@ describe('Instrumenter', () => {
           },
         },
         opts: {
-          test: '**/*.js',
+          ignore: '**/*.css',
+        },
+      }
+    );
+    expect(metadata).to.not.have.property('coverage');
+  });
+
+  it('should ignore non-matching files via `only`', () => {
+    const fixture = parse(`let i = 0; ++i;`);
+    const instrumenter = plugin({ types });
+    const metadata = { };
+    traverse(
+      fixture,
+      instrumenter.visitor,
+      null,
+      {
+        file: {
+          code: '',
+          metadata,
+          opts: {
+            filenameRelative: 'foo.css',
+            filename: '/foo/foo.css',
+          },
+        },
+        opts: {
+          only: '**/*.js',
         },
       }
     );

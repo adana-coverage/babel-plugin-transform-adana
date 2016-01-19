@@ -41,7 +41,6 @@
   "dependencies": {
     "babel-literal-to-ast": "^0.1.2",
     "babel-template": "^6.0.14",
-    "minimatch": "^3.0.0",
     "mkdirp": "^0.5.1"
   }
 }
