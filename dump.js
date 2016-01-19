@@ -4,5 +4,8 @@
 // Dump that data to disk after tests have finished.
 var dump = require('./dist/dump').default;
 process.on('exit', function() {
-  dump({ coverage: __coverage__, path: 'coverage' });
+  dump({
+    coverage: typeof __coverage__ !== 'undefined' ? __coverage__ : { },
+    path: 'coverage',
+  });
 });
