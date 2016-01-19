@@ -53,8 +53,12 @@ Usage with [mocha] is straight-forward. The only thing you need to do after runn
 Install the necessary packages:
 
 ```sh
-npm install --save-dev mocha
-npm install --save-dev adana-cli adana-format-lcov babel-plugin-transform-adana
+npm install --save-dev \
+  mocha \
+  adana-cli \
+  adana-dump \
+  adana-format-lcov \
+  babel-plugin-transform-adana
 ```
 
 Start testing with mocha:
@@ -64,7 +68,7 @@ Start testing with mocha:
 
 # Run tests and dump the coverage information.
 NODE_ENV="test" mocha \
-  -r babel-plugin-transform-adana/dump \
+  -r adana-dump \
   --compilers js:babel-core/register \
   test/*.spec.js
 
@@ -81,8 +85,12 @@ Usage with [jasmine] is less straight-forward than with [mocha] since there is n
 Install the necessary packages:
 
 ```sh
-npm install --save-dev jasmine-es6
-npm install --save-dev adana-cli adana-format-lcov babel-plugin-transform-adana
+npm install --save-dev \
+  jasmine-es6 \
+  adana-cli \
+  adana-dump \
+  adana-format-lcov \
+  babel-plugin-transform-adana
 ```
 
 Add the output tool as a helper to jasmine via `jasmine.json` in order to ensure your coverage data gets output:
@@ -95,7 +103,7 @@ Add the output tool as a helper to jasmine via `jasmine.json` in order to ensure
   ],
   "helpers": [
     "../node_modules/jasmine-es6/lib/install.js",
-    "../node_modules/babel-plugin-transform-adana/dump.js",
+    "../node_modules/adana-dump/index.js",
     "helpers/**/*.js"
   ]
 }

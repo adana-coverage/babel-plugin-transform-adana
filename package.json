@@ -15,12 +15,13 @@
     "lint": "./node_modules/.bin/eslint --ignore-path .gitignore .",
     "prepublish": "./node_modules/.bin/babel -s inline -d dist src/",
     "prespec": "npm run prepublish && ./node_modules/.bin/babel --plugins ./,transform-es2015-modules-commonjs -d dist src/",
-    "spec": "NODE_ENV=test ./node_modules/.bin/_mocha -r dump.js --slow 200 --compilers js:babel-core/register -R spec test/spec",
+    "spec": "NODE_ENV=test ./node_modules/.bin/_mocha -r adana-dump --slow 200 --compilers js:babel-core/register -R spec test/spec",
     "test": "npm run lint && npm run spec"
   },
   "devDependencies": {
     "adana-analyze": "^0.1.0",
     "adana-cli": "^0.1.0",
+    "adana-dump": "^0.1.0",
     "adana-format-lcov": "^0.1.0",
     "babel-cli": "^6.0.2",
     "babel-plugin-syntax-object-rest-spread": "^6.0.2",
