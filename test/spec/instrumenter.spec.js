@@ -3,7 +3,7 @@ import path from 'path';
 import vm from 'vm';
 import { transformFile, types, traverse } from 'babel-core';
 import { parse } from 'babylon';
-import { tags } from 'adana-analyze';
+import { tags, lines } from 'adana-analyze';
 
 /* eslint import/no-unresolved: 0 */
 /* eslint import/named: 0 */
@@ -46,10 +46,11 @@ describe('Instrumenter', () => {
       if (!handlesError && error) {
         return Promise.reject(error);
       }
+      const locations = !sandbox.global.__coverage__ ?
+        [] : sandbox.global.__coverage__[file].locations;
       return {
-        tags: (!sandbox.global.__coverage__ ?
-          { } : tags(sandbox.global.__coverage__[file].locations)
-        ),
+        tags: tags(locations),
+        lines: lines(locations),
         coverage: sandbox.global.__coverage__[file],
         code: data.code,
         error,
