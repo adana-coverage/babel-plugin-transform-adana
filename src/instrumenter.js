@@ -355,6 +355,44 @@ export default function adana({ types }) {
   }
 
   /**
+   * For multi-line reporting (and objects do tend to span multiple lines) this
+   * is required to know which parts of the object where actually executed.
+   * Ignore shorthand property that look like `{ this }`.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitObjectProperty(path, state) {
+    if (!path.node.shorthand) {
+      const key = path.get('key');
+      if (key.isExpression()) {
+        instrument(key, state, {
+          tags: [ 'line' ],
+        });
+      }
+      instrument(path.get('value'), state, {
+        tags: [ 'line' ],
+      });
+    }
+  }
+
+  /**
+   * For multi-line reporting (and arrays do tend to span multiple lines) this
+   * is required to know which parts of the array where actually executed.
+   * This does _not_ include destructed arrays.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitArrayExpression(path, state) {
+    path.get('elements').forEach(element => {
+      instrument(element, state, {
+        tags: [ 'line' ],
+      });
+    });
+  }
+
+  /**
    * Logical expressions are those using logic operators like `&&` and `||`.
    * Since logic expressions short-circuit in JS they are effectively branches
    * and will be treated as such here.
@@ -447,6 +485,8 @@ export default function adana({ types }) {
     FunctionExpression: visitFunction,
     LogicalExpression: visitLogicalExpression,
     ConditionalExpression: visitConditional,
+    ObjectProperty: visitObjectProperty,
+    ArrayExpression: visitArrayExpression,
 
     // Declarations
     FunctionDeclaration: visitFunction,

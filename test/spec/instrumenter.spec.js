@@ -19,6 +19,16 @@ describe('Instrumenter', () => {
     ast: false,
   };
 
+  function line(_number, lines) {
+    // FIXME: Workaround for issue in adana-analyze.
+    const number = `${_number}`;
+    for (let i = 0; i < lines.length; ++i) {
+      if (lines[i].line === number) {
+        return lines[i];
+      }
+    }
+  }
+
   function transform(fixture) {
     const file = path.join('.', 'test', 'fixtures', `${fixture}.fixture.js`);
     return (new Promise((resolve, reject) => {
@@ -280,6 +290,14 @@ describe('Instrumenter', () => {
     });
   });
 
+  describe('objects', () => {
+    it('should instrument computed object keys', () => {
+      return run('object-computed-keys').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+      });
+    });
+  });
+
   describe('switch blocks', () => {
     it('should ignore previously instrumented switch', () => {
       const fixture = parse(`switch(foo) { };`);
@@ -342,6 +360,20 @@ describe('Instrumenter', () => {
       return run('return-multiline').then(({ tags }) => {
         expect(tags.statement).to.have.length(2);
         expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+  });
+
+  describe('hidden branches', () => {
+    it('should handle partially constructed objects', () => {
+      return run('half-execution-object').then(({ lines }) => {
+        expect(line(13, lines)).to.have.property('count', 0);
+      });
+    });
+
+    it('should handle partially constructed arrays', () => {
+      return run('half-execution-array').then(({ lines }) => {
+        expect(line(13, lines)).to.have.property('count', 0);
       });
     });
   });
