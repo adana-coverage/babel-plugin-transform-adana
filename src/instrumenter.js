@@ -51,6 +51,10 @@ function ignore(path) {
   return (!path.node || !path.node.loc || path.node.__adana);
 }
 
+function standardize(listener) {
+  return (path, state) => ignore(path) ? undefined : listener(path, state);
+}
+
 /**
  * Create the transform-adana babel plugin.
  * @param {Object} types As per `babel`.
@@ -141,9 +145,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     instrument(path, state, {
       tags: [ 'statement', 'line' ],
       loc: path.node.loc,
@@ -158,9 +159,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitFunction(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     instrument(path.get('body'), state, {
       tags: [ 'function' ],
       name: path.node.id ? path.node.id.name : `@${key(path)}`,
@@ -177,9 +175,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitSwitchStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     let hasDefault = false;
     path.get('cases').forEach(entry => {
       if (entry.node.test) {
@@ -237,9 +232,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitVariableDeclaration(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     path.get('declarations').forEach(decl => {
       if (decl.has('init')) {
         instrument(decl.get('init'), state, {
@@ -257,9 +249,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitWhileLoop(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const test = path.get('test');
     const group = key(path);
     // This is a particularly clever use of the fact JS operators are short-
@@ -300,9 +289,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitTryStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const group = key(path);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
@@ -353,9 +339,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitLogicalExpression(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const group = key(path);
     const test = path.scope.generateDeclaredUidIdentifier('test');
 
@@ -384,9 +367,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitConditional(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     // Branches can be grouped together so that each of the possible branch
     // destinations is accounted for under one group. For if statements, this
     // refers to all the blocks that fall under a single if.. else if.. else..
@@ -460,6 +440,10 @@ export default function adana({ types }) {
     IfStatement: visitConditional,
     SwitchStatement: visitSwitchStatement,
   };
+
+  Object.keys(visitor).forEach(key => {
+    visitor[key] = standardize(visitor[key]);
+  });
 
   // Create the actual babel plugin object.
   return {
