@@ -331,6 +331,30 @@ export default function adana({ types }) {
   }
 
   /**
+   * Return statements are instrumented by marking the next block they return.
+   * This helps ensure multi-line expressions for return statements are
+   * accurately captured.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitReturnStatement(path, state) {
+    if (!path.has('argument')) {
+      path.get('argument').replaceWith(types.sequenceExpression([
+        createMarker(state, {
+          loc: path.node.loc,
+          tags: [ 'line', 'statement' ],
+        }),
+        types.identifier('undefined'),
+      ]));
+    } else {
+      instrument(path.get('argument'), state, {
+        tags: [ 'line', 'statement' ],
+      });
+    }
+  }
+
+  /**
    * Logical expressions are those using logic operators like `&&` and `||`.
    * Since logic expressions short-circuit in JS they are effectively branches
    * and will be treated as such here.
@@ -433,7 +457,7 @@ export default function adana({ types }) {
     BreakStatement: visitStatement,
     ExpressionStatement: visitStatement,
     ThrowStatement: visitStatement,
-    ReturnStatement: visitStatement,
+    ReturnStatement: visitReturnStatement,
     TryStatement: visitTryStatement,
     WhileStatement: visitWhileLoop,
     DoWhileStatement: visitWhileLoop,

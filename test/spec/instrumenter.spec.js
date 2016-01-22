@@ -324,6 +324,27 @@ describe('Instrumenter', () => {
     });
   });
 
+  describe('return statements', () => {
+    it('should handle normal return statements', () => {
+      return run('return').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+    it('should handle empty return statements', () => {
+      return run('return-undefined').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+    it('should handle multi-line return statements', () => {
+      return run('return-multiline').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+  });
+
   describe('classes', () => {
     it('should handle exported classes', () => {
       return run('class-export').then(({ tags }) => {
