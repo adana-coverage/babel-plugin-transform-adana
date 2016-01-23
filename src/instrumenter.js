@@ -51,6 +51,10 @@ function ignore(path) {
   return (!path.node || !path.node.loc || path.node.__adana);
 }
 
+function standardize(listener) {
+  return (path, state) => ignore(path) ? undefined : listener(path, state);
+}
+
 /**
  * Create the transform-adana babel plugin.
  * @param {Object} types As per `babel`.
@@ -141,9 +145,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     instrument(path, state, {
       tags: [ 'statement', 'line' ],
       loc: path.node.loc,
@@ -158,9 +159,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitFunction(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     instrument(path.get('body'), state, {
       tags: [ 'function' ],
       name: path.node.id ? path.node.id.name : `@${key(path)}`,
@@ -177,9 +175,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitSwitchStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     let hasDefault = false;
     path.get('cases').forEach(entry => {
       if (entry.node.test) {
@@ -237,9 +232,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitVariableDeclaration(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     path.get('declarations').forEach(decl => {
       if (decl.has('init')) {
         instrument(decl.get('init'), state, {
@@ -257,9 +249,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitWhileLoop(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const test = path.get('test');
     const group = key(path);
     // This is a particularly clever use of the fact JS operators are short-
@@ -300,9 +289,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitTryStatement(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const group = key(path);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
@@ -345,6 +331,68 @@ export default function adana({ types }) {
   }
 
   /**
+   * Return statements are instrumented by marking the next block they return.
+   * This helps ensure multi-line expressions for return statements are
+   * accurately captured.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitReturnStatement(path, state) {
+    if (!path.has('argument')) {
+      path.get('argument').replaceWith(types.sequenceExpression([
+        createMarker(state, {
+          loc: path.node.loc,
+          tags: [ 'line', 'statement' ],
+        }),
+        types.identifier('undefined'),
+      ]));
+    } else {
+      instrument(path.get('argument'), state, {
+        tags: [ 'line', 'statement' ],
+      });
+    }
+  }
+
+  /**
+   * For multi-line reporting (and objects do tend to span multiple lines) this
+   * is required to know which parts of the object where actually executed.
+   * Ignore shorthand property that look like `{ this }`.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitObjectProperty(path, state) {
+    if (!path.node.shorthand) {
+      const key = path.get('key');
+      if (key.isExpression()) {
+        instrument(key, state, {
+          tags: [ 'line' ],
+        });
+      }
+      instrument(path.get('value'), state, {
+        tags: [ 'line' ],
+      });
+    }
+  }
+
+  /**
+   * For multi-line reporting (and arrays do tend to span multiple lines) this
+   * is required to know which parts of the array where actually executed.
+   * This does _not_ include destructed arrays.
+   * @param   {[type]} path  [description]
+   * @param   {[type]} state [description]
+   * @returns {[type]}       [description]
+   */
+  function visitArrayExpression(path, state) {
+    path.get('elements').forEach(element => {
+      instrument(element, state, {
+        tags: [ 'line' ],
+      });
+    });
+  }
+
+  /**
    * Logical expressions are those using logic operators like `&&` and `||`.
    * Since logic expressions short-circuit in JS they are effectively branches
    * and will be treated as such here.
@@ -353,9 +401,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitLogicalExpression(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     const group = key(path);
     const test = path.scope.generateDeclaredUidIdentifier('test');
 
@@ -384,9 +429,6 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitConditional(path, state) {
-    if (ignore(path)) {
-      return;
-    }
     // Branches can be grouped together so that each of the possible branch
     // destinations is accounted for under one group. For if statements, this
     // refers to all the blocks that fall under a single if.. else if.. else..
@@ -443,6 +485,8 @@ export default function adana({ types }) {
     FunctionExpression: visitFunction,
     LogicalExpression: visitLogicalExpression,
     ConditionalExpression: visitConditional,
+    ObjectProperty: visitObjectProperty,
+    ArrayExpression: visitArrayExpression,
 
     // Declarations
     FunctionDeclaration: visitFunction,
@@ -453,13 +497,17 @@ export default function adana({ types }) {
     BreakStatement: visitStatement,
     ExpressionStatement: visitStatement,
     ThrowStatement: visitStatement,
-    ReturnStatement: visitStatement,
+    ReturnStatement: visitReturnStatement,
     TryStatement: visitTryStatement,
     WhileStatement: visitWhileLoop,
     DoWhileStatement: visitWhileLoop,
     IfStatement: visitConditional,
     SwitchStatement: visitSwitchStatement,
   };
+
+  Object.keys(visitor).forEach(key => {
+    visitor[key] = standardize(visitor[key]);
+  });
 
   // Create the actual babel plugin object.
   return {

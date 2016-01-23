@@ -3,7 +3,7 @@ import path from 'path';
 import vm from 'vm';
 import { transformFile, types, traverse } from 'babel-core';
 import { parse } from 'babylon';
-import { tags } from 'adana-analyze';
+import { tags, lines } from 'adana-analyze';
 
 /* eslint import/no-unresolved: 0 */
 /* eslint import/named: 0 */
@@ -11,13 +11,25 @@ import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: [ [ '../', {
+    plugins: [ 'syntax-jsx', [ '../', {
       ignore: 'test/spec/*.spec.js',
+    } ], [ 'transform-react-jsx', {
+      pragma: 'createElement',
     } ] ],
     presets: [ ],
     sourceMaps: true,
     ast: false,
   };
+
+  function line(_number, lines) {
+    // FIXME: Workaround for issue in adana-analyze.
+    const number = `${_number}`;
+    for (let i = 0; i < lines.length; ++i) {
+      if (lines[i].line === number) {
+        return lines[i];
+      }
+    }
+  }
 
   function transform(fixture) {
     const file = path.join('.', 'test', 'fixtures', `${fixture}.fixture.js`);
@@ -46,10 +58,11 @@ describe('Instrumenter', () => {
       if (!handlesError && error) {
         return Promise.reject(error);
       }
+      const locations = !sandbox.global.__coverage__ ?
+        [] : sandbox.global.__coverage__[file].locations;
       return {
-        tags: (!sandbox.global.__coverage__ ?
-          { } : tags(sandbox.global.__coverage__[file].locations)
-        ),
+        tags: tags(locations),
+        lines: lines(locations),
         coverage: sandbox.global.__coverage__[file],
         code: data.code,
         error,
@@ -279,6 +292,14 @@ describe('Instrumenter', () => {
     });
   });
 
+  describe('objects', () => {
+    it('should instrument computed object keys', () => {
+      return run('object-computed-keys').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+      });
+    });
+  });
+
   describe('switch blocks', () => {
     it('should ignore previously instrumented switch', () => {
       const fixture = parse(`switch(foo) { };`);
@@ -320,6 +341,56 @@ describe('Instrumenter', () => {
         expect(tags.branch[0]).to.have.property('count', 4);
         expect(tags.branch[1]).to.have.property('count', 1);
         // TODO: Ensure all branches map to same group
+      });
+    });
+  });
+
+  describe('return statements', () => {
+    it('should handle normal return statements', () => {
+      return run('return').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+    it('should handle empty return statements', () => {
+      return run('return-undefined').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+    it('should handle multi-line return statements', () => {
+      return run('return-multiline').then(({ tags }) => {
+        expect(tags.statement).to.have.length(2);
+        expect(tags.statement[0]).to.have.property('count', 1);
+      });
+    });
+  });
+
+  describe('jsx', () => {
+    it('should handle simple JSX', () => {
+      return run('jsx').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+        expect(line(7, lines)).to.have.property('count', 1);
+      });
+    });
+  });
+
+  describe('hidden branches', () => {
+    it('should handle partially constructed objects', () => {
+      return run('half-execution-object').then(({ lines }) => {
+        expect(line(13, lines)).to.have.property('count', 0);
+      });
+    });
+
+    it('should handle partially constructed arrays', () => {
+      return run('half-execution-array').then(({ lines }) => {
+        expect(line(13, lines)).to.have.property('count', 0);
+      });
+    });
+
+    it.skip('should handle partially constructed jsx', () => {
+      return run('half-execution-array').then(({ lines }) => {
+        expect(line(12, lines)).to.have.property('count', 0);
       });
     });
   });
