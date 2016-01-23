@@ -11,8 +11,10 @@ import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: [ [ '../', {
+    plugins: [ 'syntax-jsx', [ '../', {
       ignore: 'test/spec/*.spec.js',
+    } ], [ 'transform-react-jsx', {
+      pragma: 'createElement',
     } ] ],
     presets: [ ],
     sourceMaps: true,
@@ -364,6 +366,15 @@ describe('Instrumenter', () => {
     });
   });
 
+  describe('jsx', () => {
+    it('should handle simple JSX', () => {
+      return run('jsx').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+        expect(line(7, lines)).to.have.property('count', 1);
+      });
+    });
+  });
+
   describe('hidden branches', () => {
     it('should handle partially constructed objects', () => {
       return run('half-execution-object').then(({ lines }) => {
@@ -374,6 +385,12 @@ describe('Instrumenter', () => {
     it('should handle partially constructed arrays', () => {
       return run('half-execution-array').then(({ lines }) => {
         expect(line(13, lines)).to.have.property('count', 0);
+      });
+    });
+
+    it.skip('should handle partially constructed jsx', () => {
+      return run('half-execution-array').then(({ lines }) => {
+        expect(line(12, lines)).to.have.property('count', 0);
       });
     });
   });
