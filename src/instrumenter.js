@@ -363,14 +363,15 @@ export default function adana({ types }) {
    * @returns {[type]}       [description]
    */
   function visitObjectProperty(path, state) {
-    if (!path.node.shorthand) {
+    if (!path.node.shorthand && !path.parentPath.isPattern()) {
       const key = path.get('key');
+      const value = path.get('value');
       if (key.isExpression()) {
         instrument(key, state, {
           tags: [ 'line' ],
         });
       }
-      instrument(path.get('value'), state, {
+      instrument(value, state, {
         tags: [ 'line' ],
       });
     }
@@ -385,11 +386,13 @@ export default function adana({ types }) {
    * @returns {[type]}       [description]
    */
   function visitArrayExpression(path, state) {
-    path.get('elements').forEach(element => {
-      instrument(element, state, {
-        tags: [ 'line' ],
+    if (!path.parentPath.isPattern()) {
+      path.get('elements').forEach(element => {
+        instrument(element, state, {
+          tags: [ 'line' ],
+        });
       });
-    });
+    }
   }
 
   /**

@@ -298,6 +298,12 @@ describe('Instrumenter', () => {
         expect(line(6, lines)).to.have.property('count', 1);
       });
     });
+
+    it('should handle destructured objects', () => {
+      return run('object-destructured').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+      });
+    });
   });
 
   describe('switch blocks', () => {
