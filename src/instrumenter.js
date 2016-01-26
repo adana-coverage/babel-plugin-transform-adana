@@ -438,6 +438,7 @@ export default function adana({ types }) {
     // grouping.
     const root = path.findParent(search => {
       return search.node.type === path.node.type &&
+        !ignore(search) &&
         (!search.parentPath || search.parentPath.node.type !== path.node.type);
     }) || path;
 
