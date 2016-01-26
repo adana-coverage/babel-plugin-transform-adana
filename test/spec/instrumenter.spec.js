@@ -31,6 +31,14 @@ describe('Instrumenter', () => {
     }
   }
 
+  function grouped(...entries) {
+    if (entries.length <= 0) {
+      return;
+    }
+    const base = entries[0].group;
+    entries.forEach(entry => expect(entry.group).to.equal(base));
+  }
+
   function transform(fixture) {
     const file = path.join('.', 'test', 'fixtures', `${fixture}.fixture.js`);
     return (new Promise((resolve, reject) => {
@@ -255,6 +263,14 @@ describe('Instrumenter', () => {
         expect(tags.branch[1]).to.have.property('count', 1);
       });
     });
+
+    it('should cover adjunct ternary expressions', () => {
+      return run('branch-double').then(({ tags }) => {
+        expect(tags.branch).to.have.length(4);
+        grouped(tags.branch[0], tags.branch[1]);
+        grouped(tags.branch[2], tags.branch[3]);
+      });
+    });
   });
 
   describe('if blocks', () => {
@@ -264,7 +280,7 @@ describe('Instrumenter', () => {
         expect(tags.branch[0]).to.have.property('count', 0);
         expect(tags.branch[1]).to.have.property('count', 0);
         expect(tags.branch[2]).to.have.property('count', 1);
-        // TODO: Ensure all branches map to same group
+        grouped(...tags.branch);
       });
     });
     it('should cover if-else blocks', () => {
@@ -272,7 +288,7 @@ describe('Instrumenter', () => {
         expect(tags.branch).to.have.length(2);
         expect(tags.branch[0]).to.have.property('count', 0);
         expect(tags.branch[1]).to.have.property('count', 1);
-        // TODO: Ensure all branches map to same group
+        grouped(...tags.branch);
       });
     });
   });
@@ -287,7 +303,8 @@ describe('Instrumenter', () => {
         expect(tags.branch[3]).to.have.property('count', 0);
         expect(tags.branch[4]).to.have.property('count', 0);
         expect(tags.branch[5]).to.have.property('count', 0);
-        // TODO: Ensure all branches map to same group
+        // TODO: Fix grouping for logic statements.
+        // grouped(...tags.branch);
       });
     });
   });
@@ -326,7 +343,7 @@ describe('Instrumenter', () => {
         expect(tags.branch[0]).to.have.property('count', 0);
         expect(tags.branch[1]).to.have.property('count', 0);
         expect(tags.branch[2]).to.have.property('count', 1);
-        // TODO: Ensure all branches map to same group
+        grouped(...tags.branch);
       });
     });
     it('should cover switch statements without `default` rules', () => {
@@ -335,7 +352,7 @@ describe('Instrumenter', () => {
         expect(tags.branch[0]).to.have.property('count', 0);
         expect(tags.branch[1]).to.have.property('count', 0);
         expect(tags.branch[2]).to.have.property('count', 1);
-        // TODO: Ensure all branches map to same group
+        grouped(...tags.branch);
       });
     });
   });
@@ -346,7 +363,7 @@ describe('Instrumenter', () => {
         expect(tags.branch).to.have.length(2);
         expect(tags.branch[0]).to.have.property('count', 4);
         expect(tags.branch[1]).to.have.property('count', 1);
-        // TODO: Ensure all branches map to same group
+        grouped(...tags.branch);
       });
     });
   });
