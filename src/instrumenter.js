@@ -366,7 +366,7 @@ export default function adana({ types }) {
     if (!path.node.shorthand && !path.parentPath.isPattern()) {
       const key = path.get('key');
       const value = path.get('value');
-      if (key.isExpression()) {
+      if (path.node.computed) {
         instrument(key, state, {
           tags: [ 'line' ],
         });
