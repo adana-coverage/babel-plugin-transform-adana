@@ -321,6 +321,12 @@ describe('Instrumenter', () => {
         expect(line(6, lines)).to.have.property('count', 1);
       });
     });
+
+    it('should handle objects with string keys', () => {
+      return run('object-string-key').then(({ lines }) => {
+        expect(line(6, lines)).to.have.property('count', 1);
+      });
+    });
   });
 
   describe('switch blocks', () => {
