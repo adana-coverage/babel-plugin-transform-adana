@@ -259,6 +259,12 @@ describe('Instrumenter', () => {
         expect(line(3, lines)).to.have.property('count', 1);
       });
     });
+    it('should cover class methods', () => {
+      return run('class-property').then(({ lines, tags }) => {
+        expect(tags.function).to.have.length(1);
+        expect(line(3, lines)).to.have.property('count', 1);
+      });
+    });
   });
 
   describe('ternary expressions', () => {
