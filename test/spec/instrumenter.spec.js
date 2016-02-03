@@ -253,6 +253,12 @@ describe('Instrumenter', () => {
         expect(tags.function[0]).to.have.property('count', 1);
       });
     });
+    it('should cover object methods', () => {
+      return run('function-property').then(({ lines, tags }) => {
+        expect(tags.function).to.have.length(1);
+        expect(line(3, lines)).to.have.property('count', 1);
+      });
+    });
   });
 
   describe('ternary expressions', () => {

@@ -487,6 +487,7 @@ export default function adana({ types }) {
     // Expressions
     ArrowFunctionExpression: visitFunction,
     FunctionExpression: visitFunction,
+    ObjectMethod: visitFunction,
     LogicalExpression: visitLogicalExpression,
     ConditionalExpression: visitConditional,
     ObjectProperty: visitObjectProperty,
