@@ -1,3 +1,5 @@
+/* global require */
+
 import { expect } from 'chai';
 import path from 'path';
 import vm from 'vm';
@@ -11,7 +13,7 @@ import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: [ 'syntax-jsx', [ '../', {
+    plugins: [ 'syntax-jsx', [ require.resolve('../../'), {
       ignore: 'test/spec/*.spec.js',
     } ], [ 'transform-react-jsx', {
       pragma: 'createElement',
