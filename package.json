@@ -14,7 +14,7 @@
   "scripts": {
     "lint": "./node_modules/.bin/eslint --ignore-path .gitignore .",
     "prepublish": "./node_modules/.bin/babel -s inline -d dist src/",
-    "prespec": "npm run prepublish && ./node_modules/.bin/babel --plugins ./,transform-es2015-modules-commonjs -d dist src/",
+    "prespec": "npm run prepublish && ./node_modules/.bin/babel --plugins `pwd`,transform-es2015-modules-commonjs -d dist src/",
     "spec": "NODE_ENV=test ./node_modules/.bin/_mocha -r adana-dump --slow 200 --compilers js:babel-core/register -R spec test/spec",
     "test": "npm run lint && npm run spec"
   },

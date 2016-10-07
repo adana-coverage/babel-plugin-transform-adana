@@ -1,3 +1,5 @@
+/* global require */
+
 import { expect } from 'chai';
 import path from 'path';
 import vm from 'vm';
@@ -11,7 +13,7 @@ import plugin, { key } from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: [ 'syntax-jsx', [ '../', {
+    plugins: [ 'syntax-jsx', [ require.resolve('../../'), {
       ignore: 'test/spec/*.spec.js',
     } ], [ 'transform-react-jsx', {
       pragma: 'createElement',
@@ -467,6 +469,13 @@ describe('Instrumenter', () => {
         expect(tags.baz[1]).to.have.property('count', 0);
         expect(tags).to.have.property('qux').to.have.length(1);
         expect(tags.qux[0]).to.have.property('count', 0);
+      });
+    });
+    it('should handle error tags', () => {
+      return run('tag-error').then(({ tags }) => {
+        expect(tags.foo[0]).to.have.property('count', 1);
+        expect(tags.bar[0]).to.have.property('count', 1);
+        expect(tags.baz[0]).to.have.property('count', 0);
       });
     });
     it.skip('should handle block tags', () => {
