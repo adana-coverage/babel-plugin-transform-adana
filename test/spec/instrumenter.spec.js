@@ -471,6 +471,13 @@ describe('Instrumenter', () => {
         expect(tags.qux[0]).to.have.property('count', 0);
       });
     });
+    it('should handle error tags', () => {
+      return run('tag-error').then(({ tags }) => {
+        expect(tags.foo[0]).to.have.property('count', 1);
+        expect(tags.bar[0]).to.have.property('count', 1);
+        expect(tags.baz[0]).to.have.property('count', 0);
+      });
+    });
     it.skip('should handle block tags', () => {
       return run('tag-block').then(({ tags }) => {
         expect(tags.statement).to.have.length(2);

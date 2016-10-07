@@ -290,6 +290,8 @@ export default function adana({ types }) {
    */
   function visitTryStatement(path, state) {
     const group = key(path);
+    const body = path.get('block');
+    addRules(state, body.node.loc, body.node.leadingComments);
     path.get('block').pushContainer('body', types.expressionStatement(
       createMarker(state, {
         tags: [ 'branch', 'line' ],
@@ -298,6 +300,8 @@ export default function adana({ types }) {
       })
     ));
     if (path.has('handler')) {
+      const handler = path.get('handler').node;
+      addRules(state, handler.loc, handler.body.leadingComments);
       path.get('handler.body').unshiftContainer(
         'body',
         types.expressionStatement(
