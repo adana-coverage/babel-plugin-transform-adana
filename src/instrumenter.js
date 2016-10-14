@@ -487,6 +487,19 @@ export default function adana({ types }) {
     }
   }
 
+  function noInstrument(path) {
+    if (
+      path.node &&
+      path.node.leadingComments &&
+      path.node.leadingComments.some(
+        (comment) => /^\s*adana-no-instrument\s*$/.exec(comment.value)
+      )
+    ) {
+      path.skip();
+      return;
+    }
+  }
+
   const visitor = {
     // Expressions
     ArrowFunctionExpression: visitFunction,
@@ -513,6 +526,9 @@ export default function adana({ types }) {
     DoWhileStatement: visitWhileLoop,
     IfStatement: visitConditional,
     SwitchStatement: visitSwitchStatement,
+
+    // Generics
+    enter: noInstrument,
   };
 
   Object.keys(visitor).forEach(key => {

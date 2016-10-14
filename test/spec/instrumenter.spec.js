@@ -446,6 +446,14 @@ describe('Instrumenter', () => {
     });
   });
 
+  describe('instrumentation disabling', () => {
+    it('should skip instrumenting things', () => {
+      return run('no-instrument').then(({ tags }) => {
+        expect(tags).to.not.have.property('branch');
+      });
+    });
+  });
+
   describe('tags', () => {
     it.skip('should handle line tags', () => {
       return run('tag-line').then(({ tags }) => {
