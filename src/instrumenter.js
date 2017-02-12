@@ -1,12 +1,7 @@
-import { createHash } from 'crypto';
 import { util } from 'babel-core';
 import prelude from './prelude';
 import meta from './meta';
 import { applyRules, addRules } from './tags';
-
-export function hash(code) {
-  return createHash('sha1').update(code).digest('hex');
-}
 
 export function skip({ opts, file } = { }) {
   if (file && opts) {
@@ -544,7 +539,7 @@ export default function adana({ types }) {
           return;
         }
         meta(state, {
-          hash: hash(state.file.code),
+          source: state.file.code,
           entries: [],
           rules: [],
           tags: {},
