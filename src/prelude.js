@@ -16,7 +16,7 @@ export default function prelude(state) {
   const global = (state.opts && state.opts.global) || '__coverage__';
   return render({
     GLOBAL: astify(global),
-    HASH: astify(coverage.hash),
+    SOURCE: astify(coverage.source),
     TAGS: astify(coverage.tags),
     VARIABLE: coverage.variable,
     FILE: astify(name),

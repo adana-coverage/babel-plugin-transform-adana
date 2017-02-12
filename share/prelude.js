@@ -3,7 +3,7 @@
 const VARIABLE = (exports => {
   exports[GLOBAL] = exports[GLOBAL] || { };
   const coverage = exports[GLOBAL][FILE] = {
-    hash: HASH,
+    source: SOURCE,
     path: FILE,
     locations: LOCATIONS,
   };
