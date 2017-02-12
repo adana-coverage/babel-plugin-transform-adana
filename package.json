@@ -39,9 +39,6 @@
     "eslint-plugin-react": "^3.11.2",
     "mocha": "^2.2.5"
   },
-  "peerDependencies": {
-    "babel-core": ">=6.0.20"
-  },
   "dependencies": {
     "babel-literal-to-ast": "^0.1.2",
     "babel-template": "^6.0.14"
