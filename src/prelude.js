@@ -1,6 +1,6 @@
 /* global __dirname */
 
-import { readFileSync } from 'fs';
+import {readFileSync} from 'fs';
 import path from 'path';
 import template from 'babel-template';
 import astify from 'babel-literal-to-ast';
