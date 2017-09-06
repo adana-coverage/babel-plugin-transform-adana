@@ -9,6 +9,7 @@ const foo = () => {
   } catch (err) {
     ++i;
   }
+  return null;
 };
 
 foo();

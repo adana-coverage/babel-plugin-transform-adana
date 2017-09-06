@@ -11,16 +11,18 @@ function within(a, b) {
 
 export function applyRules(state) {
   const coverage = meta(state);
-  coverage.entries.forEach(entry => {
+  coverage.entries.forEach((entry) => {
     const result = { };
-    const output = [ ];
-    entry.tags.forEach(tag => result[tag] = true);
-    coverage.rules.forEach(rule => {
+    const output = [];
+    entry.tags.forEach((tag) => {
+      result[tag] = true;
+    });
+    coverage.rules.forEach((rule) => {
       if (within(rule.loc, entry.loc)) {
         result[rule.tag] = rule.value;
       }
     });
-    Object.keys(result).forEach(tag => {
+    Object.keys(result).forEach((tag) => {
       const value = result[tag];
       if (value) {
         output.push(tag);
@@ -35,7 +37,7 @@ export function extract(comment) {
   const result = COMMENT_PATTERN.exec(comment);
   if (result) {
     const entries = result[2].split(/\s+/);
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       switch (entry.charAt(0)) {
       case '+':
         output[entry.substr(1)] = true;
@@ -54,9 +56,9 @@ export function extract(comment) {
 export function addRules(state, loc, comments) {
   if (comments) {
     const coverage = meta(state);
-    comments.forEach(comment => {
+    comments.forEach((comment) => {
       const values = extract(comment.value);
-      Object.keys(values).forEach(tag => {
+      Object.keys(values).forEach((tag) => {
         coverage.rules.push({
           tag,
           value: values[tag],

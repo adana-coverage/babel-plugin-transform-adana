@@ -1,7 +1,7 @@
-import { expect } from 'chai';
+import {expect} from 'chai';
 /* eslint import/no-unresolved: 0 */
 /* eslint import/named: 0 */
-import { extract } from '../../dist/tags';
+import {extract} from '../../dist/tags';
 
 describe('tags', () => {
   it('should extract tags from comments properly', () => {

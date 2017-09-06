@@ -1,11 +1,11 @@
-import { util } from 'babel-core';
+import {util} from 'babel-core';
 import prelude from './prelude';
 import meta from './meta';
-import { applyRules, addRules } from './tags';
+import {applyRules, addRules} from './tags';
 
-export function skip({ opts, file } = { }) {
+export function skip({opts, file} = { }) {
   if (file && opts) {
-    const { ignore = [], only } = opts;
+    const {ignore = [], only} = opts;
     return util.shouldIgnore(
       file.opts.filename,
       util.arrayify(ignore, util.regexify),
@@ -55,7 +55,7 @@ function standardize(listener) {
  * @param {Object} types As per `babel`.
  * @returns {Object} `babel` plugin object.
  */
-export default function adana({ types }) {
+export default function instrumenter({types}) {
   /**
    * Create a chunk of code that marks the specified node as having
    * been executed.
@@ -64,7 +64,7 @@ export default function adana({ types }) {
    * @returns {Object} AST node for marking coverage.
    */
   function createMarker(state, options) {
-    const { tags, loc, name, group } = options;
+    const {tags, loc, name, group} = options;
     const coverage = meta(state);
     const id = coverage.entries.length;
 
@@ -125,7 +125,7 @@ export default function adana({ types }) {
     if (path.isBlockStatement()) {
       path.unshiftContainer('body', X(types.expressionStatement(marker())));
     } else if (path.isExpression()) {
-      path.replaceWith(X(types.sequenceExpression([ marker(), path.node ])));
+      path.replaceWith(X(types.sequenceExpression([marker(), path.node])));
     } else if (path.isStatement()) {
       if (isInstrumentableStatement(path)) {
         path.insertBefore(X(types.expressionStatement(marker())));
@@ -141,7 +141,7 @@ export default function adana({ types }) {
    */
   function visitStatement(path, state) {
     instrument(path, state, {
-      tags: [ 'statement', 'line' ],
+      tags: ['statement', 'line'],
       loc: path.node.loc,
     });
   }
@@ -155,7 +155,7 @@ export default function adana({ types }) {
    */
   function visitFunction(path, state) {
     instrument(path.get('body'), state, {
-      tags: [ 'function' ],
+      tags: ['function'],
       name: path.node.id ? path.node.id.name : `@${key(path)}`,
       loc: path.node.loc,
     });
@@ -171,7 +171,7 @@ export default function adana({ types }) {
    */
   function visitSwitchStatement(path, state) {
     let hasDefault = false;
-    path.get('cases').forEach(entry => {
+    path.get('cases').forEach((entry) => {
       if (entry.node.test) {
         addRules(state, entry.node.loc, entry.node.test.trailingComments);
       }
@@ -187,7 +187,7 @@ export default function adana({ types }) {
         hasDefault = true;
       }
       entry.unshiftContainer('consequent', createMarker(state, {
-        tags: [ 'branch', 'switch' ],
+        tags: ['branch', 'switch'],
         loc: entry.node.loc,
         group: key(path),
       }));
@@ -208,7 +208,7 @@ export default function adana({ types }) {
       // Finally add the default case.
       path.pushContainer('cases', types.switchCase(null, [
         types.expressionStatement(createMarker(state, {
-          tags: [ 'branch', 'switch' ],
+          tags: ['branch', 'switch'],
           loc: {
             start: path.node.loc.end,
             end: path.node.loc.end,
@@ -227,10 +227,10 @@ export default function adana({ types }) {
    * @returns {void}
    */
   function visitVariableDeclaration(path, state) {
-    path.get('declarations').forEach(decl => {
+    path.get('declarations').forEach((decl) => {
       if (decl.has('init')) {
         instrument(decl.get('init'), state, {
-          tags: [ 'statement', 'variable', 'line' ],
+          tags: ['statement', 'variable', 'line'],
         });
       }
     });
@@ -260,7 +260,7 @@ export default function adana({ types }) {
         '&&',
         X(test.node),
         createMarker(state, {
-          tags: [ 'branch', 'line', 'statement', 'loop', 'while' ],
+          tags: ['branch', 'line', 'statement', 'loop', 'while'],
           loc: test.node.loc,
           group,
         })
@@ -268,7 +268,7 @@ export default function adana({ types }) {
       types.unaryExpression(
         '!',
         createMarker(state, {
-          tags: [ 'branch', 'line', 'loop', 'while' ],
+          tags: ['branch', 'line', 'loop', 'while'],
           loc: test.node.loc,
           group,
         })
@@ -320,14 +320,14 @@ export default function adana({ types }) {
       trigger,
       types.expressionStatement(
         createMarker(state, {
-          tags: [ 'branch', 'line', 'exception' ],
+          tags: ['branch', 'line', 'exception'],
           loc: path.get('block').node.loc,
           group,
         })
       ),
       types.expressionStatement(
         createMarker(state, {
-          tags: [ 'branch', 'line', 'exception' ],
+          tags: ['branch', 'line', 'exception'],
           loc: handlerLoc,
           group,
         })
@@ -337,7 +337,7 @@ export default function adana({ types }) {
     if (path.has('finalizer')) {
       path.get('finalizer').unshiftContainer('body', guard);
     } else {
-      path.get('finalizer').replaceWith(types.blockStatement([ guard ]));
+      path.get('finalizer').replaceWith(types.blockStatement([guard]));
     }
   }
 
@@ -354,13 +354,13 @@ export default function adana({ types }) {
       path.get('argument').replaceWith(types.sequenceExpression([
         createMarker(state, {
           loc: path.node.loc,
-          tags: [ 'line', 'statement' ],
+          tags: ['line', 'statement'],
         }),
         types.identifier('undefined'),
       ]));
     } else {
       instrument(path.get('argument'), state, {
-        tags: [ 'line', 'statement' ],
+        tags: ['line', 'statement'],
       });
     }
   }
@@ -379,11 +379,11 @@ export default function adana({ types }) {
       const value = path.get('value');
       if (path.node.computed) {
         instrument(key, state, {
-          tags: [ 'line' ],
+          tags: ['line'],
         });
       }
       instrument(value, state, {
-        tags: [ 'line' ],
+        tags: ['line'],
       });
     }
   }
@@ -398,9 +398,9 @@ export default function adana({ types }) {
    */
   function visitArrayExpression(path, state) {
     if (!path.parentPath.isPattern()) {
-      path.get('elements').forEach(element => {
+      path.get('elements').forEach((element) => {
         instrument(element, state, {
-          tags: [ 'line' ],
+          tags: ['line'],
         });
       });
     }
@@ -420,16 +420,16 @@ export default function adana({ types }) {
 
     path.replaceWith(X(types.conditionalExpression(
       types.assignmentExpression('=', test, X(path.node)),
-      types.sequenceExpression([ createMarker(state, {
-        tags: [ 'branch', 'logic' ],
+      types.sequenceExpression([createMarker(state, {
+        tags: ['branch', 'logic'],
         loc: path.get('left').node.loc,
         group,
-      }), test ]),
-      types.sequenceExpression([ createMarker(state, {
-        tags: [ 'branch', 'logic' ],
+      }), test]),
+      types.sequenceExpression([createMarker(state, {
+        tags: ['branch', 'logic'],
         loc: path.get('right').node.loc,
         group,
-      }), test ])
+      }), test])
     )));
   }
 
@@ -447,7 +447,7 @@ export default function adana({ types }) {
     // destinations is accounted for under one group. For if statements, this
     // refers to all the blocks that fall under a single if.. else if.. else..
     // grouping.
-    const root = path.findParent(search => {
+    const root = path.findParent((search) => {
       return search.node.type === path.node.type &&
         !ignore(search) &&
         (!search.parentPath || search.parentPath.node.type !== path.node.type);
@@ -469,21 +469,21 @@ export default function adana({ types }) {
     }
 
     instrument(path.get('consequent'), state, {
-      tags: [ 'branch', 'line', 'if' ],
+      tags: ['branch', 'line', 'if'],
       loc: path.node.consequent.loc,
       group,
     });
 
     if (path.has('alternate') && !path.get('alternate').isIfStatement()) {
       instrument(path.get('alternate'), state, {
-        tags: [ 'branch', 'line', 'if' ],
+        tags: ['branch', 'line', 'if'],
         loc: path.node.alternate.loc,
         group,
       });
     } else if (!path.has('alternate')) {
       path.get('alternate').replaceWith(types.expressionStatement(
         createMarker(state, {
-          tags: [ 'branch', 'if' ],
+          tags: ['branch', 'if'],
           loc: {
             start: path.node.loc.end,
             end: path.node.loc.end,
@@ -538,7 +538,7 @@ export default function adana({ types }) {
     enter: noInstrument,
   };
 
-  Object.keys(visitor).forEach(key => {
+  Object.keys(visitor).forEach((key) => {
     visitor[key] = standardize(visitor[key]);
   });
 

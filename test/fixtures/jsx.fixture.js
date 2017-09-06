@@ -1,4 +1,4 @@
-const createElement = () => {};
+const React = {createElement: () => {}};
 
 function component() {
   return (
