@@ -226,6 +226,13 @@ describe('Instrumenter', () => {
           expect(tags.branch[1]).to.have.property('count', 1);
         });
     });
+    it('should cover exceptions', () => {
+      return run('try-catch-deferred').then(({ tags }) => {
+        expect(tags.branch).to.have.length(2);
+        expect(tags.branch[0]).to.have.property('count', 1);
+        expect(tags.branch[1]).to.have.property('count', 0);
+      });
+    });
   });
 
   describe('functions', () => {

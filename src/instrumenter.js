@@ -286,46 +286,58 @@ export default function adana({ types }) {
   function visitTryStatement(path, state) {
     const group = key(path);
     const body = path.get('block');
+    const trigger = path.scope.generateDeclaredUidIdentifier('_exception');
     addRules(state, body.node.loc, body.node.leadingComments);
-    path.get('block').pushContainer('body', types.expressionStatement(
-      createMarker(state, {
-        tags: [ 'branch', 'line', 'exception' ],
-        loc: path.get('block').node.loc,
-        group,
-      })
+    path.get('block').unshiftContainer('body', types.expressionStatement(
+      types.assignmentExpression('=', trigger, types.booleanLiteral(true)),
     ));
+    const handlerExpression = types.expressionStatement(
+      types.assignmentExpression('=', trigger, types.booleanLiteral(false)),
+    );
+    let handlerLoc;
     if (path.has('handler')) {
       const handler = path.get('handler').node;
+      handlerLoc = handler.loc;
       addRules(state, handler.loc, handler.body.leadingComments);
       path.get('handler.body').unshiftContainer(
         'body',
-        types.expressionStatement(
-          createMarker(state, {
-            tags: [ 'branch', 'line', 'exception' ],
-            loc: path.get('handler').node.loc,
-            group,
-          })
-        )
+        handlerExpression
       );
     } else {
       const loc = path.get('block').node.loc.end;
+      handlerLoc = {start: loc, end: loc};
       path.get('handler').replaceWith(types.catchClause(
         types.identifier('err'), types.blockStatement([
-          types.expressionStatement(
-            createMarker(state, {
-              tags: [ 'branch', 'exception' ],
-              loc: {
-                start: loc,
-                end: loc,
-              },
-              group,
-            })
-          ),
+          handlerExpression,
           types.throwStatement(
             types.identifier('err')
           ),
         ])
       ));
+    }
+
+    const guard = types.ifStatement(
+      trigger,
+      types.expressionStatement(
+        createMarker(state, {
+          tags: [ 'branch', 'line', 'exception' ],
+          loc: path.get('block').node.loc,
+          group,
+        })
+      ),
+      types.expressionStatement(
+        createMarker(state, {
+          tags: [ 'branch', 'line', 'exception' ],
+          loc: handlerLoc,
+          group,
+        })
+      )
+    );
+
+    if (path.has('finalizer')) {
+      path.get('finalizer').unshiftContainer('body', guard);
+    } else {
+      path.get('finalizer').replaceWith(types.blockStatement([ guard ]));
     }
   }
 
