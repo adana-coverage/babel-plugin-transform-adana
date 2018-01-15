@@ -3,7 +3,7 @@
 import {expect} from 'chai';
 import path from 'path';
 import vm from 'vm';
-import {transformFile, types, traverse} from 'babel-core';
+import {transformFile, types, traverse} from '@babel/core';
 import {parse} from 'babylon';
 import {tags, lines} from 'adana-analyze';
 
@@ -13,10 +13,10 @@ import plugin, {key} from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
-    plugins: ['syntax-jsx', [require.resolve('../../'), {
+    plugins: [[require.resolve('../../'), {
       ignore: 'test/spec/*.spec.js',
-    }], 'transform-react-jsx'],
-    presets: [],
+    }]],
+    presets: ['@babel/react'],
     sourceMaps: true,
     ast: false,
   };
@@ -94,14 +94,7 @@ describe('Instrumenter', () => {
       instrumenter.visitor,
       null,
       {
-        file: {
-          code: '',
-          metadata,
-          opts: {
-            filenameRelative: 'foo.css',
-            filename: '/foo/foo.css',
-          },
-        },
+        filename: 'foo.css',
         opts: {
           ignore: '**/*.css',
         },
@@ -119,14 +112,7 @@ describe('Instrumenter', () => {
       instrumenter.visitor,
       null,
       {
-        file: {
-          code: '',
-          metadata,
-          opts: {
-            filenameRelative: 'foo.css',
-            filename: '/foo/foo.css',
-          },
-        },
+        filename: 'foo.css',
         opts: {
           only: '**/*.js',
         },

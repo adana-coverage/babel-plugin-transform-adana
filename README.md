@@ -69,7 +69,7 @@ Start testing with mocha:
 # Run tests and dump the coverage information.
 NODE_ENV="test" mocha \
   -r adana-dump \
-  --compilers js:babel-core/register \
+  -r @babel/register \
   test/*.spec.js
 
 # Upload coverage data to coveralls.
@@ -181,10 +181,10 @@ There are a couple of configuration options available to control how your progra
 Again, this plugin is simply a [babel] transformer that injects markers to determine if specific parts of the code have been run. Usage is as a normal babel plugin:
 
 ```javascript
-import { transform } from 'babel-core';
+import {transform} from '@babel/core';
 
 const result = transform('some code', {
-  plugins: [ 'transform-adana' ]
+  plugins: ['transform-adana']
 });
 
 // Access result.code, result.map and result.metadata.coverage

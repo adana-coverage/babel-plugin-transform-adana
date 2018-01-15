@@ -1,0 +1,4 @@
+/share/**/*
+/dist/**/*
+/coverage/**/*
+node_modules

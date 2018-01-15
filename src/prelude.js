@@ -2,7 +2,7 @@
 
 import {readFileSync} from 'fs';
 import path from 'path';
-import template from 'babel-template';
+import template from '@babel/template';
 import astify from 'babel-literal-to-ast';
 import meta from './meta';
 
@@ -12,15 +12,13 @@ const render = template(readFileSync(
 
 export default function prelude(state) {
   const coverage = meta(state);
-  const name = state.file.opts.filenameRelative;
+  const name = state.filename;
   const global = (state.opts && state.opts.global) || '__coverage__';
   return render({
     GLOBAL: astify(global),
     SOURCE: astify(coverage.source),
-    TAGS: astify(coverage.tags),
     VARIABLE: coverage.variable,
     FILE: astify(name),
     LOCATIONS: astify(coverage.entries),
-    COUNT: astify(coverage.entries.length),
   });
 }
