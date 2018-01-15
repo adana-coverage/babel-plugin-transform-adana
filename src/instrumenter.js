@@ -1,16 +1,20 @@
-import {util} from 'babel-core';
+import * as types from '@babel/types';
+import micromatch from 'micromatch';
+
 import prelude from './prelude';
 import meta from './meta';
 import {applyRules, addRules} from './tags';
 
-export function skip({opts, file} = { }) {
+export function skip({opts, filename: file} = { }) {
   if (file && opts) {
-    const {ignore = [], only} = opts;
-    return util.shouldIgnore(
-      file.opts.filename,
-      util.arrayify(ignore, util.regexify),
-      only ? util.arrayify(only, util.regexify) : null
-    );
+    const {ignore, only} = opts;
+
+    if (only) {
+      return micromatch([file], only, {nocase: true}).length <= 0;
+    }
+    if (ignore) {
+      return micromatch([file], ignore, {nocase: true}).length > 0;
+    }
   }
   return false;
 }
@@ -52,10 +56,9 @@ function standardize(listener) {
 
 /**
  * Create the transform-adana babel plugin.
- * @param {Object} types As per `babel`.
  * @returns {Object} `babel` plugin object.
  */
-export default function instrumenter({types}) {
+export default function instrumenter() {
   /**
    * Create a chunk of code that marks the specified node as having
    * been executed.
@@ -78,7 +81,7 @@ export default function instrumenter({types}) {
     });
 
     // Maker is simply a statement incrementing a coverage variable.
-    return X(types.unaryExpression('++', types.memberExpression(
+    return X(types.updateExpression('++', types.memberExpression(
       types.memberExpression(
         coverage.variable,
         types.numericLiteral(id),
@@ -86,7 +89,7 @@ export default function instrumenter({types}) {
       ),
       types.stringLiteral('count'),
       true
-    )));
+    ), true));
   }
 
   /**
