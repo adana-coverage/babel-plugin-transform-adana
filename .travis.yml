@@ -6,6 +6,6 @@ matrix:
     - node_js: '8'
     - node_js: '9'
 
-after_script:
-  - npm install coveralls
-  - cat ./coverage/coverage.json | ./node_modules/.bin/adana --format lcov | ./node_modules/coveralls/bin/coveralls.js
+after_success:
+  - cat ./coverage/coverage.json | ./node_modules/.bin/adana -F adana-format-istanbul > ./coverage/istanbul.json
+  - bash <(curl -s https://codecov.io/bash) -f ./coverage/istanbul.json

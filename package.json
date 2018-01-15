@@ -28,7 +28,7 @@
     "adana-analyze": "^0.1.0",
     "adana-cli": "^0.1.0",
     "adana-dump": "^0.1.0",
-    "adana-format-lcov": "^0.1.0",
+    "adana-format-istanbul": "^0.1.2",
     "babylon": "7.0.0-beta.37",
     "chai": "^3.4.0",
     "eslint": "^4.6.1",
