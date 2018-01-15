@@ -331,15 +331,14 @@ describe('Instrumenter', () => {
   describe('logic expressions', () => {
     it('should cover logic', () => {
       return run('logic').then(({tags}) => {
-        expect(tags.branch).to.have.length(6);
-        expect(tags.branch[0]).to.have.property('count', 1);
-        expect(tags.branch[1]).to.have.property('count', 0);
-        expect(tags.branch[2]).to.have.property('count', 1);
-        expect(tags.branch[3]).to.have.property('count', 0);
-        expect(tags.branch[4]).to.have.property('count', 0);
-        expect(tags.branch[5]).to.have.property('count', 0);
-        // TODO: Fix grouping for logic statements.
-        // grouped(...tags.branch);
+        const groups = {};
+        let sum = 0;
+        tags.branch.forEach((x) => {
+          groups[x.group] = groups[x.group] ? groups[x.group].concat(x) : [x];
+          sum += x.count;
+        });
+        expect(Object.keys(groups)).to.have.length(2);
+        expect(sum).to.equal(5);
       });
     });
   });

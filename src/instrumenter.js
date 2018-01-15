@@ -424,20 +424,20 @@ export default function instrumenter() {
    */
   function visitLogicalExpression(path, state) {
     const group = key(path);
-    const test = path.scope.generateDeclaredUidIdentifier('test');
-
-    path.replaceWith(X(types.conditionalExpression(
-      types.assignmentExpression('=', test, X(path.node)),
+    const left = path.get('left').node;
+    const right = path.get('right').node;
+    path.replaceWith(X(types.logicalExpression(
+      path.node.operator,
       types.sequenceExpression([createMarker(state, {
         tags: ['branch', 'logic'],
-        loc: path.get('left').node.loc,
+        loc: left.loc,
         group,
-      }), test]),
+      }), left]),
       types.sequenceExpression([createMarker(state, {
         tags: ['branch', 'logic'],
-        loc: path.get('right').node.loc,
+        loc: right.loc,
         group,
-      }), test])
+      }), right])
     )));
   }
 
