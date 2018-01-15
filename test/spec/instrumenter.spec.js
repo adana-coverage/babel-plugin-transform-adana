@@ -9,7 +9,7 @@ import {tags, lines} from 'adana-analyze';
 
 /* eslint import/no-unresolved: 0 */
 /* eslint import/named: 0 */
-import plugin, {key} from '../../dist/instrumenter';
+import plugin, {key, skip} from '../../dist/instrumenter';
 
 describe('Instrumenter', () => {
   const options = {
@@ -79,6 +79,29 @@ describe('Instrumenter', () => {
     });
   }
 
+  describe('.skip', () => {
+    it('should work with single ignore paths', () => {
+      const result = skip({ignore: 'foo.js'}, 'foo.js');
+      expect(result).to.be.true;
+    });
+    it('should work with single only paths', () => {
+      const result = skip({only: 'foo.js'}, 'foo.js');
+      expect(result).to.be.false;
+    });
+    it('should work with array only paths', () => {
+      const result = skip({only: ['foo.js']}, 'foo.js');
+      expect(result).to.be.false;
+    });
+    it('should work with array ignore paths', () => {
+      const result = skip({ignore: ['foo.js']}, 'foo.js');
+      expect(result).to.be.true;
+    });
+    it('should not skip with no options', () => {
+      const result = skip({}, 'foo.js');
+      expect(result).to.be.false;
+    });
+  });
+
   describe('.key', () => {
     it('should fail with no location', () => {
       expect(() => key({node: { }})).to.throw(TypeError);
@@ -94,7 +117,10 @@ describe('Instrumenter', () => {
       instrumenter.visitor,
       null,
       {
-        filename: 'foo.css',
+        filename: '/foo/foo.css',
+        file: {
+          opts: {cwd: '/foo'},
+        },
         opts: {
           ignore: '**/*.css',
         },
@@ -112,7 +138,10 @@ describe('Instrumenter', () => {
       instrumenter.visitor,
       null,
       {
-        filename: 'foo.css',
+        filename: '/foo/foo.css',
+        file: {
+          opts: {cwd: '/foo'},
+        },
         opts: {
           only: '**/*.js',
         },
