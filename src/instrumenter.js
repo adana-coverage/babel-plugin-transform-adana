@@ -1,20 +1,25 @@
 import * as types from '@babel/types';
 import micromatch from 'micromatch';
+import {relative} from 'path';
 
 import prelude from './prelude';
 import meta from './meta';
 import {applyRules, addRules} from './tags';
 
-export function skip({opts, filename: file} = { }) {
-  if (file && opts) {
-    const {ignore, only} = opts;
-
-    if (only) {
-      return micromatch([file], only, {nocase: true}).length <= 0;
-    }
-    if (ignore) {
-      return micromatch([file], ignore, {nocase: true}).length > 0;
-    }
+export function skip({ignore, only}, file) {
+  if (only) {
+    return micromatch(
+      [file],
+      Array.isArray(only) ? only : [only],
+      {nocase: true}
+    ).length <= 0;
+  }
+  if (ignore) {
+    return micromatch(
+      [file],
+      Array.isArray(ignore) ? ignore : [ignore],
+      {nocase: true}
+    ).length > 0;
   }
   return false;
 }
@@ -549,8 +554,10 @@ export default function instrumenter() {
   return {
     visitor: {
       Program(path, state) {
+        const {opts, filename, file: {opts: {cwd}}} = state;
         // Check if file should be instrumented or not.
-        if (skip(state)) {
+        const name = filename ? relative(cwd, filename) : '<source>';
+        if (filename && skip(opts, name)) {
           return;
         }
         meta(state, {
@@ -559,6 +566,7 @@ export default function instrumenter() {
           rules: [],
           tags: {},
           variable: path.scope.generateUidIdentifier('coverage'),
+          name,
         });
         path.traverse(visitor, state);
         applyRules(state);
