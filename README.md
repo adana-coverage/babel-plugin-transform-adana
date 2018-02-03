@@ -44,7 +44,7 @@ Setup your `.babelrc` to use it:
 
 **IMPORTANT**: This plugin works best when it runs as the _first_ plugin in the babel transform list, since its purpose is to instrument your _original code_, not whatever other transformations happen to get made.
 
-**NOTE**: This plugin is only responsible for _instrumenting_ your code, not verifying the coverage information or reporting. You can install something like `adana-cli` to get something like `instanbul check-coverage`. See the [adana-cli] repository for more information.
+**NOTE**: This plugin is only responsible for _instrumenting_ your code, not verifying the coverage information or reporting. You can install something like `adana-cli` to get something like `istanbul check-coverage`. See the [adana-cli] repository for more information.
 
 ### mocha
 
